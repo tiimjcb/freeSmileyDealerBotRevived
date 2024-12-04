@@ -47,3 +47,9 @@ You are free to:
 However, this project comes with **no warranty** or guarantee. Use at your own risk—especially if you value your sanity in emoji-filled Discord servers.
 
 Please credit the original bot creator, [Tomgrin10](https://github.com/tomgrin10), and the contributors of this revived version when sharing or redistributing the code.
+
+## 👀 Privacy and terms of service
+
+By using the **Free Smiley Dealer Bot Revived** (FSD Revived), you agree to our [Terms of Service](TERMS.md) and to our [Privacy Policy](PRIVACY.md).
+
+Please review them before deploying the bot.
