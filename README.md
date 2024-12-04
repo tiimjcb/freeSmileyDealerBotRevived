@@ -39,7 +39,7 @@ You can also contact me on Discord : @tiim.jcb
 
 This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). 
 
-You are free to: [Installation Link](https://discord.com/oauth2/authorize?client_id=1313839534324318290&permissions=274877910016&integration_type=0&scope=bot)
+You are free to: [Installation Link](https://discord.com/oauth2/authorize?client_id=1313839534324318290&permissions=274877910016&integration_type=0&scope=bot).
 
 - Use, modify, and distribute the code for personal or commercial purposes.
 - Contribute to the project or adapt it for your own use.
