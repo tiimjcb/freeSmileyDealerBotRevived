@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 import logging
 import emoji
+import re
 from smiley_map import unicode_to_custom_smiley
 
 # logger configuration
@@ -14,6 +15,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+
+
+def normalize_emoji(emoji):
+    """
+    Supprime les modificateurs de couleur de peau d'un emoji.
+    """
+    # Regex pour détecter les modificateurs de couleur (U+1F3FB à U+1F3FF)
+    skin_tone_modifiers = re.compile(r'[\U0001F3FB-\U0001F3FF]')
+    return skin_tone_modifiers.sub('', emoji)
 
 
 def process_message_for_smiley(message, emoji_map):
@@ -29,20 +40,19 @@ def process_message_for_smiley(message, emoji_map):
 
     # first breakpoint : there is no emojis in the message
     if not emojis_found:
-        logger.error(
-            f"[GUILD : {guild_id}] - [USER : {user_name}] - No emojis found in the message."
-        )
         return None
 
     # we go through all the emojis in the message - in a reverse way
     for emoji_entry in reversed(emojis_found):
         unicode_emoji = emoji_entry['emoji']
-        if unicode_emoji in emoji_map:
+        normalized_emoji = normalize_emoji(unicode_emoji)  # Normaliser l'emoji
+
+        if normalized_emoji in emoji_map:
             logger.info(
                 f"[GUILD : {guild_id}] - [USER : {user_name}] - "
-                f"Emoji '{unicode_emoji}' detected. Matching smiley sent."
+                f"Emoji '{unicode_emoji}' detected (normalized to '{normalized_emoji}'). Matching smiley sent."
             )
-            return emoji_map[unicode_emoji]
+            return emoji_map[normalized_emoji]
 
     # last breakpoint : no matches detected
     logger.warning(
