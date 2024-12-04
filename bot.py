@@ -29,37 +29,36 @@ def normalize_emoji(emoji):
 
 def process_message_for_smiley(message, emoji_map):
     """
-    return the smiley of the last emoji in a string that has an occurence in the dictionnary.
-    if no emoji is in the string, or if none of the emojis in the string have an occurence, it returns None.
-    """
-    # grad the guild and the username -- logging purposes
+     return the smileys of the emojis in a string that has an occurence in the dictionnary.
+     if no emoji is in the string, or if none of the emojis in the string have an occurence, it returns None.
+     """
     guild_id = message.guild.id if message.guild else "DM"
     user_name = message.author.name
 
     emojis_found = emoji.emoji_list(message.content)
 
-    # first breakpoint : there is no emojis in the message
     if not emojis_found:
         return None
 
-    # we go through all the emojis in the message - in a reverse way
-    for emoji_entry in reversed(emojis_found):
+    smileys = []
+    for emoji_entry in emojis_found:
         unicode_emoji = emoji_entry['emoji']
-        normalized_emoji = normalize_emoji(unicode_emoji)  # Normaliser l'emoji
+        normalized_emoji = normalize_emoji(unicode_emoji)
 
         if normalized_emoji in emoji_map:
             logger.info(
                 f"[GUILD : {guild_id}] - [USER : {user_name}] - "
                 f"Emoji '{unicode_emoji}' detected (normalized to '{normalized_emoji}'). Matching smiley sent."
             )
-            return emoji_map[normalized_emoji]
+            smileys.append(emoji_map[normalized_emoji])
 
-    # last breakpoint : no matches detected
-    logger.warning(
-        f"[GUILD : {guild_id}] - [USER : {user_name}] - "
-        f"Emoji(s) detected but none matched the database."
-    )
-    return None
+    if not smileys:
+        logger.warning(
+            f"[GUILD : {guild_id}] - [USER : {user_name}] - "
+            f"Emoji(s) detected but none matched the database."
+        )
+
+    return smileys if smileys else None
 
 
 
@@ -89,9 +88,11 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    free_smiley = process_message_for_smiley(message, unicode_to_custom_smiley)
-    if free_smiley:
-        await message.channel.send(free_smiley)
+    free_smileys = process_message_for_smiley(message, unicode_to_custom_smiley)
+    if free_smileys:
+        smiley_message = " ".join(free_smileys)
+        await message.channel.send(smiley_message)
+
 
 
 bot.run(TOKEN)
