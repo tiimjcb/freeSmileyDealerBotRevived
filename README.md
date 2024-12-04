@@ -31,7 +31,7 @@ Big thanks to @Squelchyman for helping me simplify this process.
 
 ## 💬 Contributing
 
-If you’d like to contribute, feel free to join the new Discord server : [SOON]
+If you’d like to contribute, feel free to join the new Discord server : [https://discord.gg/WDw7KdTYbs](https://discord.gg/WDw7KdTYbs)
 
 You can also contact me on Discord : @tiim.jcb
 
