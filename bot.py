@@ -20,9 +20,8 @@ logger = logging.getLogger(__name__)
 
 def normalize_emoji(emoji):
     """
-    Supprime les modificateurs de couleur de peau d'un emoji.
+    function that normalizes an emoji by removing skin tone modifiers.
     """
-    # Regex pour détecter les modificateurs de couleur (U+1F3FB à U+1F3FF)
     skin_tone_modifiers = re.compile(r'[\U0001F3FB-\U0001F3FF]')
     return skin_tone_modifiers.sub('', emoji)
 
