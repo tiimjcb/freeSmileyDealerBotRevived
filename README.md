@@ -17,12 +17,12 @@ It's chaotic. It's cursed. It's beautiful.
 
 ## 🛠 How to install it to your server? 
 
-Simply click the installation link right here : 
+Simply click the installation link right here : [Installation link](https://discord.com/oauth2/authorize?client_id=1313839534324318290&permissions=274877910016&integration_type=0&scope=bot).
 
 It'll work right out of the box. Make sure you give it the permissions to read and send messages.
 
 
-## ⚠️ Bugs and Known Issues
+## ⚠️ Bugs and Known Issues)
 
 Due to the horrific process of importing all the smiley faces, ChatGPT was used to make it quicker. So, **bugs are expected**. 
 
@@ -37,7 +37,7 @@ You can also contact me on Discord : @tiim.jcb
 
 ## 📝 License
 
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). 
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
 You are free to: [Installation Link](https://discord.com/oauth2/authorize?client_id=1313839534324318290&permissions=274877910016&integration_type=0&scope=bot).
 
