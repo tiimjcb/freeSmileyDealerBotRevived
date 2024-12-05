@@ -19,7 +19,7 @@ It's chaotic. It's cursed. It's beautiful.
 
 ## 🛠 How to install it to your server? 
 
-Simply click the installation link right here : [Installation link](https://discord.com/oauth2/authorize?client_id=1313839534324318290&permissions=274877910016&integration_type=0&scope=bot).
+Simply click the installation link right here : [Installation link](https://discord.com/oauth2/authorize?client_id=1313839534324318290).
 
 It'll work right out of the box. Make sure you give it the permissions to read and send messages.
 
