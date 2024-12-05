@@ -2,6 +2,8 @@
 
 Welcome to **Free Smiley Dealer Bot Revived (FSD Revived)**, a Discord bot that sends emojis with their cursed "free smiley" equivalents each times it detects one. It's the ultimate way to spice up your server with chaos and nostalgia.
 
+🎉 Almost **300** emojis available !
+
 ![65013](https://github.com/user-attachments/assets/5437433f-68b3-4d1f-9569-51a4bbd26ba1)
 
 ---
@@ -31,7 +33,7 @@ Big thanks to @Squelchyman for helping me simplify this process.
 
 ## 💬 Contributing
 
-If you’d like to contribute, feel free to join the new Discord server : [SOON]
+If you’d like to contribute, feel free to join the new Discord server : [https://discord.gg/WDw7KdTYbs](https://discord.gg/WDw7KdTYbs)
 
 You can also contact me on Discord : @tiim.jcb
 
