@@ -385,6 +385,7 @@ text_to_custom_smiley = {
     "lore" : "<:lore:1314281452204068966>",
     "ice" : "<:cold_face_1:1313901146489884702>",
     "family" : "<:family_adults_children_1:1313927937673793617>",
-    "society" : "<:joker:1314328054713155624>",
+    "society" : "<:society:1314336869756047451>",
+    "joker" : "<:joker:1314328054713155624>",
 }
 
