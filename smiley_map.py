@@ -357,3 +357,33 @@ unicode_to_custom_smiley = {
     "🇱🇹": "<:lithuania:1314252968429752491>",
 }
 
+
+text_to_custom_smiley = {
+    # salutations and greetings
+    "hello": "<:wave:1313940702820044873>",
+    "hi": "<:wave:1313940702820044873>",
+    "hey": "<:wave:1313940702820044873>",
+    "goodbye": "<:wave:1313940702820044873>",
+    "bye": "<:wave:1313940702820044873>",
+
+    # emotions
+    "lol": "<:rofl:1313937450099539998>",
+    "cool": "<:cool_1:1313901192757248040>",
+
+    # poggers
+    "poggers": "<:poggers:1313935895975563343>",
+    "pog": "<:poggers:1313935895975563343>",
+
+    # others
+    "birthday" : "<a:birthday:1313897918079434803>",
+    "football" : "<a:soccer:1313938627104866394>",
+    "friday" : "<a:friday_1:1313928983578017843>",
+    "gay": "<:gay_pride_flag_1:1313929053614641152>",
+    "peace": "<:peace:1313934953033240668>",
+    "attention": "<:exclamation_1:1313927841322373261>",
+    "nuclear" : "<:nuclear2:1314281297849352294>",
+    "lore" : "<:lore:1314281452204068966>",
+    "ice" : "<:cold_face_1:1313901146489884702>",
+    "family" : "<:family_adults_children_1:1313927937673793617>",
+}
+

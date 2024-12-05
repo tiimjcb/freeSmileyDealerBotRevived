@@ -1,11 +1,11 @@
 import discord
-from discord.ext import commands
+from discord import app_commands
 from dotenv import load_dotenv
 import os
 import logging
 import emoji
 import re
-from smiley_map import unicode_to_custom_smiley
+from smiley_map import unicode_to_custom_smiley, text_to_custom_smiley
 from datetime import datetime, timedelta
 
 # log directory
@@ -64,38 +64,59 @@ def normalize_emoji(emoji):
     return skin_tone_modifiers.sub('', emoji)
 
 
-def process_message_for_smiley(message, emoji_map):
+
+def process_message_for_smiley(message, emoji_map, text_map):
     """
-     return the smileys of the emojis in a string that has an occurence in the dictionnary.
-     if no emoji is in the string, or if none of the emojis in the string have an occurence, it returns None.
-     """
+    return the smileys of the emojis in a string that has an occurence in the dictionnary.
+    if no emoji is in the string, or if none of the emojis in the string have an occurence, it returns None.
+    """
     guild_id = message.guild.id if message.guild else "DM"
+    guild_name = message.guild.name if message.guild else "DM"
     user_name = message.author.name
 
-    emojis_found = emoji.emoji_list(message.content)
-
-    if not emojis_found:
-        return None
-
     smileys = []
-    for emoji_entry in emojis_found:
-        unicode_emoji = emoji_entry['emoji']
-        normalized_emoji = normalize_emoji(unicode_emoji)
 
-        if normalized_emoji in emoji_map:
-            logger.info(
-                f"[GUILD : {guild_id}] - [USER : {user_name}] - "
-                f"Emoji '{unicode_emoji}' detected (normalized to '{normalized_emoji}'). Matching smiley sent."
-            )
-            smileys.append(emoji_map[normalized_emoji])
+    content = message.content
+    current_index = 0
+
+    # get the smileys and the words in the message in the order they appear
+    while current_index < len(content):
+        match = emoji.emoji_list(content[current_index:])
+
+        if match and match[0]['match_start'] == 0:
+            unicode_emoji = match[0]['emoji']
+            normalized_emoji = normalize_emoji(unicode_emoji)
+
+            if normalized_emoji in emoji_map:
+                smileys.append(emoji_map[normalized_emoji])
+                logger.info(
+                    f"[GUILD : {guild_id} - {guild_name}] - [USER : {user_name}] - "
+                    f"Emoji '{unicode_emoji}' detected (normalized to '{normalized_emoji}'). Matching smiley {emoji_map[normalized_emoji]} sent."
+                )
+            current_index += len(unicode_emoji)
+
+        else:
+            next_space = content.find(" ", current_index)
+            if next_space == -1:
+                next_space = len(content)
+            word = content[current_index:next_space].lower()
+            if word in text_map:
+                smileys.append(text_map[word])
+                logger.info(
+                    f"[GUILD : {guild_id} - {guild_name}] - [USER : {user_name}] - "
+                    f"Word '{word}' detected. Matching smiley {text_map[word]} sent."
+                )
+            current_index = next_space + 1
 
     if not smileys:
         logger.warning(
             f"[GUILD : {guild_id}] - [USER : {user_name}] - "
-            f"Emoji(s) detected but none matched the database."
+            f"Emoji(s) or words detected but none matched the database."
         )
 
     return smileys if smileys else None
+
+
 
 
 
@@ -103,21 +124,38 @@ def process_message_for_smiley(message, emoji_map):
 load_dotenv("token.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
+    logger.error("There is no token!")
     raise ValueError("There is no token!")
 
 
-
 # basic bot configuration
-intents = discord.Intents.default()
-intents.messages = True
-intents.message_content = True
-bot = commands.Bot(command_prefix=">", intents=intents)
+intents = discord.Intents.all()
+bot = discord.Client(intents=intents)
+tree = app_commands.CommandTree(bot)
 
 @bot.event
 async def on_ready():
     print(f"Bot loaded and connected as {bot.user} !")
     logger.info("Bot started!")
+    activity = discord.Activity(type=discord.ActivityType.watching, name="free smiley faces !")
+    await bot.change_presence(status=discord.Status.online, activity=activity)
+    try:
+        await tree.sync()
+        print("Command tree synced globally!")
+        logger.info("Command tree synced globally!")
+    except Exception as e:
+        print(f"Error syncing command tree: {e}")
+        logger.error(f"Error syncing command tree: {e}")
 
+
+# slash commands
+@tree.command(name="ping", description="A simple ping command")
+async def ping(interaction):
+    await interaction.response.send_message("Pong !")
+
+@tree.command(name="help", description="A simple help command")
+async def help_command(interaction):
+    await interaction.response.send_message("Never use paid smileys. <:happyFaceSecondary:1313929340974530692>")
 
 # main program
 @bot.event
@@ -125,11 +163,9 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    free_smileys = process_message_for_smiley(message, unicode_to_custom_smiley)
+    free_smileys = process_message_for_smiley(message, unicode_to_custom_smiley, text_to_custom_smiley)
     if free_smileys:
         smiley_message = " ".join(free_smileys)
         await message.channel.send(smiley_message)
-
-
 
 bot.run(TOKEN)
