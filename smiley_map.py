@@ -102,7 +102,7 @@ unicode_to_custom_smiley = {
 
     # interacting faces
     "🫡" : "<:militarySalute:1313883864044933232>",
-    "🤮" : "<:vomit:1313890576600531034>",
+    "🤮" : "<a:vomiting_face:1314225730351140915>",
     "🖕": "<:middle_finger:1313933112635555911>",
     "👉": "<:point_right:1313935915173023789>",
     "👈": "<:point_left:1313935906708787310>",
