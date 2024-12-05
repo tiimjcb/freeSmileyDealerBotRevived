@@ -367,7 +367,7 @@ text_to_custom_smiley = {
     "bye": "<:wave:1313940702820044873>",
 
     # emotions
-    "lol": "<:rofl:1313937450099539998>",
+    "lol": "<a:rofl:1313937450099539998>",
     "cool": "<:cool_1:1313901192757248040>",
 
     # poggers
