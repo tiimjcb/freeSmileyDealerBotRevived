@@ -6,16 +6,54 @@ import logging
 import emoji
 import re
 from smiley_map import unicode_to_custom_smiley
+from datetime import datetime, timedelta
 
-# logger configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+# log directory
+LOG_DIR = "./logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+def setup_logger():
+    # get today's date
+    today = datetime.now().strftime("%d-%m-%Y")
+    log_filename = f"log-{today}.log"
+    log_filepath = os.path.join(LOG_DIR, log_filename)
+
+    # clean up old log files
+    cleanup_old_logs()
+
+    # setting up the logger
+    logging.basicConfig(
+        filename=log_filepath,
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    console.setFormatter(formatter)
+    logging.getLogger().addHandler(console)
+    logging.info("Logger initialized.")
+    return logging.getLogger()
 
 
+def cleanup_old_logs():
+    """
+    function that clean up log files older than a week
+    """
+    cutoff_date = datetime.now() - timedelta(days=7)
+    for filename in os.listdir(LOG_DIR):
+        if filename.startswith("log-") and filename.endswith(".log"):
+            file_date_str = filename[4:-4]  # log-dd-mm-yyyy.log
+            try:
+                file_date = datetime.strptime(file_date_str, "%d-%m-%Y")
+                if file_date < cutoff_date:
+                    os.remove(os.path.join(LOG_DIR, filename))
+                    logging.info(f"Deleted old log file: {filename}")
+            except ValueError:
+                continue
+
+logger = setup_logger()
 
 
 def normalize_emoji(emoji):
@@ -78,7 +116,7 @@ bot = commands.Bot(command_prefix=">", intents=intents)
 @bot.event
 async def on_ready():
     print(f"Bot loaded and connected as {bot.user} !")
-
+    logger.info("Bot started!")
 
 
 # main program
