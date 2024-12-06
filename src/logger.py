@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 
-LOG_DIR = "./logs"
+LOG_DIR = "../logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 def cleanup_old_logs():
