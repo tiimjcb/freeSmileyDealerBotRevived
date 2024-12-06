@@ -241,8 +241,7 @@ async def on_ready():
     for guild in guild_list:
         add_guild_to_db(guild.id)
 
-    global friday_hours
-    friday_hours = generate_friday_schedule()
+    generate_friday_schedule()
     logger.info(f"Generated Friday schedule: {friday_hours}")
     friday_message.start()
 

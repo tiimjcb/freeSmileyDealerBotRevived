@@ -97,7 +97,7 @@ def generate_friday_schedule():
     Generate a random schedule for Friday messages.
     Between 5 and 12 times a day, at random hours and minutes.
     """
-    times = []
+    friday_hours.clear()
     num_messages = random.randint(15, 22)
     for _ in range(num_messages):
         hour = random.choices(
@@ -106,8 +106,8 @@ def generate_friday_schedule():
             k=1
         )[0]
         minute = random.randint(0, 59)
-        times.append((hour, minute))
-    return times
+        friday_hours.append((hour, minute))
+    friday_hours.append((23, 59))
 
 
 def is_friday_random_time():
