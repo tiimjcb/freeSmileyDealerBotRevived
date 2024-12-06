@@ -142,7 +142,7 @@ venv.bak/
 /site
 
 #databases
-/databases/serversettings.db
+/databases/
 
 # mypy
 .mypy_cache/
