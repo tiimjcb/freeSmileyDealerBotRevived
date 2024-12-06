@@ -3,9 +3,7 @@ from discord import app_commands
 from dotenv import load_dotenv
 import os
 import logging
-import emoji
 import re
-from smiley_map import unicode_to_custom_smiley, text_to_custom_smiley
 from datetime import datetime, timedelta
 import sqlite3
 
