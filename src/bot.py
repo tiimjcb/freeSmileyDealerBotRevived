@@ -63,18 +63,28 @@ async def ping(interaction):
 
 @tree.command(name="help", description="A simple help command")
 async def help_command(interaction):
-    await interaction.response.send_message("hey there <:yellow:1313941466862587997> \n"
-                                            "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n\n"
-                                            "**List of commands:** \n"
+    await interaction.response.send_message(f"hey there <:yellow:1313941466862587997> \n"
+                                            "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n"
+                                            "# Commands\n"
                                             "- /ping : a simple ping command \n"
                                             "- /help : this help message \n"
-                                            "- /toggle_text_triggers : toggles on or off the text triggers (like 'hi')\n")
+                                            "# Admin commands \n"
+                                            "- /set_text_triggers : toggles on or off the text triggers (like 'hi')\n"
+                                            "- /set_smiley_messages : toggles on or off the smiley messages (bot sends emojis as messages)\n"
+                                            "- /set_smiley_reactions : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n",
+                                            ephemeral=True
+)
 
 
-@tree.command(name="toggle_text_triggers", description="Toggles on or off the text triggers (like 'hi'")
-async def toggle_text_triggers(interaction):
 
-    # check if the user is an administrator
+
+
+# text triggers settings - server_settings[1]
+@tree.command(name="set_text_triggers", description="Enable or disable text triggers (e.g., 'hi')")
+@app_commands.describe(enable="True to enable text triggers, False to disable them")
+async def set_text_triggers(interaction, enable: bool):
+
+    # admin check
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
             "You do not have permission to use this command. Only administrators can toggle text triggers. <:redAngry:1313876421227057193>",
@@ -82,35 +92,119 @@ async def toggle_text_triggers(interaction):
         )
         return
 
-
     guild_id = interaction.guild_id
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
+
+    # check if the guild exists in the database
     cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
     result = cursor.fetchone()
 
-    ## if the guild is not in the database, which is a huge problem, we add it
+    # if the guild is not in the database, add it
     if not result:
-        cursor.execute("INSERT INTO server_settings (guild_id, text_reactions_enabled) VALUES (?, 1)", (guild_id,))
+        cursor.execute("INSERT INTO server_settings (guild_id, text_reactions_enabled) VALUES (?, ?)", (guild_id, int(enable)))
         conn.commit()
-        await interaction.response.send_message("Text triggers enabled. <:yellow:1313941466862587997>")
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Text triggers {status_message}. <:yellow:1313941466862587997>")
     else:
-        #normal behavior
-        if result[1]:
-            cursor.execute("UPDATE server_settings SET text_reactions_enabled = 0 WHERE guild_id = ?", (guild_id,))
-            conn.commit()
-            await interaction.response.send_message("Text triggers disabled. <a:bigCry:1313925251108835348>")
-        else:
-            cursor.execute("UPDATE server_settings SET text_reactions_enabled = 1 WHERE guild_id = ?", (guild_id,))
-            conn.commit()
-            await interaction.response.send_message("Text triggers enabled. <:yellow:1313941466862587997>")
-        cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
-        result = cursor.fetchone()
-        logger.info(f"Text triggers settings modified for guild {guild_id}. Current status : {result[1]}")
+        # if it's in the db, update the setting for the guild
+        cursor.execute("UPDATE server_settings SET text_reactions_enabled = ? WHERE guild_id = ?", (int(enable), guild_id))
+        conn.commit()
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Text triggers {status_message}. <:yellow:1313941466862587997>")
+
+    # log the change
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+    logger.info(f"Text triggers settings modified for guild {guild_id}. Current status: {result[1]}")
+
     conn.close()
 
 
 
+# smiley messages settings - server_settings[2]
+@tree.command(name="set_smiley_messages", description="Enable or disable smiley messages (bot sends emojis as messages)")
+@app_commands.describe(enable="True to enable smiley messages, False to disable them")
+async def set_smiley_messages(interaction, enable: bool):
+
+    # admin check
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can toggle smiley messages. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    guild_id = interaction.guild_id
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+
+    # if the guild is not in the db
+    if not result:
+        cursor.execute("INSERT INTO server_settings (guild_id, smiley_messages) VALUES (?, ?)", (guild_id, int(enable)))
+        conn.commit()
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Smiley messages {status_message}. <:yellow:1313941466862587997>")
+    else:
+        cursor.execute("UPDATE server_settings SET smiley_messages = ? WHERE guild_id = ?", (int(enable), guild_id))
+        conn.commit()
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Smiley messages {status_message}. <:yellow:1313941466862587997>")
+
+    # and we log as always
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+    logger.info(f"Smiley messages settings modified for guild {guild_id}. Current status: {result[2]}")
+
+    conn.close()
+
+
+# smiley reactions settings - server_settings[3]
+@tree.command(name="set_smiley_reactions", description="Enable or disable smiley reactions (bot reacts to messages with emojis)")
+@app_commands.describe(enable="True to enable smiley reactions, False to disable them")
+async def set_smiley_reactions(interaction, enable: bool):
+
+    # usual admin check
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can toggle smiley reactions. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    guild_id = interaction.guild_id
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+
+    # if the guild is not in db
+    if not result:
+        cursor.execute("INSERT INTO server_settings (guild_id, smiley_reactions) VALUES (?, ?)", (guild_id, int(enable)))
+        conn.commit()
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Smiley reactions {status_message}. <:yellow:1313941466862587997>")
+    else:
+        cursor.execute("UPDATE server_settings SET smiley_reactions = ? WHERE guild_id = ?", (int(enable), guild_id))
+        conn.commit()
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Smiley reactions {status_message}. <:yellow:1313941466862587997>")
+
+    # log
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+    logger.info(f"Smiley reactions settings modified for guild {guild_id}. Current status: {result[3]}")
+
+    conn.close()
+
+
+
+
+##################### ADMINISTRATIVE COMMANDS #####################
 
 @tree.command(name="add_regular_trigger", description="add a regular trigger to the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
@@ -268,15 +362,44 @@ async def on_guild_join(guild):
     add_guild_to_db(guild.id)
 
 
+
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
+    # get server settings
+    guild_id = message.guild.id if message.guild else None
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT smiley_messages, smiley_reactions FROM server_settings WHERE guild_id = ?", (guild_id,))
+    settings = cursor.fetchone()
+    conn.close()
+
+    # if there's no config we apply default settings -- should not happen, but just in case
+    if not settings:
+        smiley_messages_enabled = True
+        smiley_reactions_enabled = False
+    else:
+        smiley_messages_enabled, smiley_reactions_enabled = settings
+
+
     smileys = process_message_for_smiley(message)
     if smileys:
-        smiley_message = " ".join(smileys)
-        await message.channel.send(smiley_message)
+        # sends a message
+        if smiley_messages_enabled:
+            smiley_message = " ".join(smileys)
+            await message.channel.send(smiley_message)
+
+        # adds reactions
+        if smiley_reactions_enabled:
+            for smiley in smileys:
+                try:
+                    emoji_id = smiley.split(":")[-1][:-1]
+                    emoji_object = discord.PartialEmoji(name=smiley.split(":")[1], id=int(emoji_id))
+                    await message.add_reaction(emoji_object)
+                except Exception as e:
+                    logger.warning(f"Failed to add reaction {smiley} to message: {e}")
 
 
 bot.run(TOKEN)
