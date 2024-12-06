@@ -198,12 +198,6 @@ async def remove_special_trigger(interaction, trigger: str):
 
 @tasks.loop(minutes=1)
 async def friday_message():
-    global friday_hours
-    now = datetime.datetime.now()
-    if now.weekday() == 4:
-        friday_hours = generate_friday_schedule()
-        logger.info(f"Generated Friday schedule: {friday_hours}")
-
     if is_friday_random_time():
         guild_id = 1231115041432928326
         channel_id = 1231369439879102496
@@ -247,6 +241,9 @@ async def on_ready():
     for guild in guild_list:
         add_guild_to_db(guild.id)
 
+    global friday_hours
+    friday_hours = generate_friday_schedule()
+    logger.info(f"Generated Friday schedule: {friday_hours}")
     friday_message.start()
 
     logger.info(f"\nBot started and connected as {bot.user} in {len(guild_list)} server!")
