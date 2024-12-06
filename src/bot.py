@@ -4,7 +4,7 @@ from discord import app_commands
 from dotenv import load_dotenv
 import os
 from logger import logger
-from src.utils import is_friday_hour
+from utils import is_friday_hour
 from utils import add_guild_to_db, process_message_for_smiley
 from discord.ext import tasks
 import random
