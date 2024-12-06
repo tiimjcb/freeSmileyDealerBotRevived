@@ -51,7 +51,7 @@ def cleanup_old_logs():
                 file_date = datetime.strptime(file_date_str, "%d-%m-%Y")
                 if file_date < cutoff_date:
                     os.remove(os.path.join(LOG_DIR, filename))
-                    logging.info(f"Deleted old log file: {filename}")
+                    logging.info(f"\nDeleted old log file: {filename} \n")
             except ValueError:
                 continue
 
@@ -63,7 +63,9 @@ logger = setup_logger()
 load_dotenv("token.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
-    logger.error("There is no token!")
+    logger.error("====================================\n"
+                 "There is no token!!!\n"
+                 "====================================")
     raise ValueError("There is no token!")
 
 # basic bot configuration
@@ -113,7 +115,7 @@ def process_message_for_smiley(message):
         result = cursor.fetchone()
         # smiley is in result[2]
         if result:
-            logger.info(f"{user_name} in {guild_name} ({guild_id}) said the word {word}")
+            logger.info(f"\n{user_name} in {guild_name} ({guild_id}) said the word {word}")
             logger.info(f"Special trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
             smileys.append(result[2])
             return smileys # we return at the first special trigger found because they have priority
@@ -127,7 +129,7 @@ def process_message_for_smiley(message):
         result = cursor.fetchone()
         # smiley is in result[2]
         if result:
-            logger.info(f"{user_name} in {guild_name} ({guild_id}) said the word {word}")
+            logger.info(f"\n{user_name} in {guild_name} ({guild_id}) said the word {word}")
             logger.info(f"Trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
             smileys.append(result[2])
 
@@ -147,7 +149,7 @@ def add_guild_to_db(guild_id):
     cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
     result = cursor.fetchone()
     if not result:
-        logger.info(f"Adding guild {guild_id} to the server settings database.")
+        logger.info(f"\nAdding guild {guild_id} to the server settings database.")
         cursor.execute("INSERT INTO server_settings (guild_id) VALUES (?)", (guild_id,))
         conn.commit()
         logger.info(f"Guild {guild_id} added to the server settings database.")
@@ -177,21 +179,19 @@ async def on_ready():
         add_guild_to_db(guild.id)
 
 
-    logger.info(f"Bot started and connected as {bot.user} in {len(guild_list)} server!")
+    logger.info(f"\nBot started and connected as {bot.user} in {len(guild_list)} server!")
     activity = discord.Activity(type=discord.ActivityType.watching, name="free smiley faces !")
     await bot.change_presence(status=discord.Status.online, activity=activity)
     try:
         await tree.sync()
-        print("Command tree synced globally!")
         logger.info("Command tree synced globally!")
     except Exception as e:
-        print(f"Error syncing command tree: {e}")
         logger.error(f"Error syncing command tree: {e}")
 
 
 @bot.event
 async def on_guild_join(guild):
-    logger.info(f"Bot has joined a new guild: {guild.name} (ID: {guild.id})")
+    logger.info(f"\nBot has joined a new guild: {guild.name} (ID: {guild.id})")
     add_guild_to_db(guild.id)
 
 
