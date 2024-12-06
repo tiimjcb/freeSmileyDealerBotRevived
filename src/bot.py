@@ -17,7 +17,7 @@ friday_messages = [
     "friday friday friday <a:crazy_laugh:1313932126026203216>",
     "todey is fridnay <:lore:1314281452204068966>",
     "hey everione its friday <a:wink2:1313941408738050098>",
-    "sorry was sleping thought it was thursday <:bigCry:1313925251108835348>, but its friday yahoo <:smirk:1313938566484852839>",
+    "sorry was sleping thought it was thursday <a:bigCry:1313925251108835348>, but its friday yahoo <:smirk:1313938566484852839>",
     "FRIDAY <a:stuck_out_tongue:1313938771804422285>",
     "yall know its friday right??????? <:redAngry:1313876421227057193>",
     "are yo guys talking enough about fridey???? <:weary:1313940711627948164>",
