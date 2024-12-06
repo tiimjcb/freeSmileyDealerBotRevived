@@ -7,6 +7,7 @@ import emoji
 import re
 from smiley_map import unicode_to_custom_smiley, text_to_custom_smiley
 from datetime import datetime, timedelta
+import sqlite3
 
 # log directory
 LOG_DIR = "./logs"
@@ -65,56 +66,46 @@ def normalize_emoji(emoji):
 
 
 
-def process_message_for_smiley(message, emoji_map, text_map):
+def process_message_for_smiley(message):
     """
-    return the smileys of the emojis in a string that has an occurence in the dictionnary.
+    return the smileys of the emojis in a string that has an occurence in the database.
     if no emoji is in the string, or if none of the emojis in the string have an occurence, it returns None.
     """
     guild_id = message.guild.id if message.guild else "DM"
     guild_name = message.guild.name if message.guild else "DM"
     user_name = message.author.name
 
+    # break the message into words
+    words = message.content.split()
     smileys = []
 
-    content = message.content
-    current_index = 0
+    # connect to the database
+    conn = sqlite3.connect('databases/bot.db')
+    cursor = conn.cursor()
 
-    # get the smileys and the words in the message in the order they appear
-    while current_index < len(content):
-        match = emoji.emoji_list(content[current_index:])
+    # first : scan for special triggers
+    for word in words:
+        cursor.execute("SELECT * FROM special_triggers WHERE word = ?", (word,))
+        result = cursor.fetchone()
+        # smiley is in result[2]
+        if result:
+            logger.info(f"{user_name} in {guild_name} ({guild_id}) said the word {word}")
+            logger.info(f"Special trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
+            smileys.append(result[2])
+            return smileys # we return at the first special trigger found because they have priority
 
-        if match and match[0]['match_start'] == 0:
-            unicode_emoji = match[0]['emoji']
-            normalized_emoji = normalize_emoji(unicode_emoji)
-
-            if normalized_emoji in emoji_map:
-                smileys.append(emoji_map[normalized_emoji])
-                logger.info(
-                    f"[GUILD : {guild_id} - {guild_name}] - [USER : {user_name}] - "
-                    f"Emoji '{unicode_emoji}' detected (normalized to '{normalized_emoji}'). Matching smiley {emoji_map[normalized_emoji]} sent."
-                )
-            current_index += len(unicode_emoji)
-
-        else:
-            next_space = content.find(" ", current_index)
-            if next_space == -1:
-                next_space = len(content)
-            word = content[current_index:next_space].lower()
-            if word in text_map:
-                smileys.append(text_map[word])
-                logger.info(
-                    f"[GUILD : {guild_id} - {guild_name}] - [USER : {user_name}] - "
-                    f"Word '{word}' detected. Matching smiley {text_map[word]} sent."
-                )
-            current_index = next_space + 1
-
-    if not smileys:
-        logger.warning(
-            f"[GUILD : {guild_id}] - [USER : {user_name}] - "
-            f"Emoji(s) or words detected but none matched the database."
-        )
+    # second : scan for regular triggers
+    for word in words:
+        cursor.execute("SELECT * FROM trigger_words WHERE word = ?", (word,))
+        result = cursor.fetchone()
+        # smiley is in result[2]
+        if result:
+            logger.info(f"{user_name} in {guild_name} ({guild_id}) said the word {word}")
+            logger.info(f"Trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
+            smileys.append(result[2])
 
     return smileys if smileys else None
+
 
 
 
@@ -163,9 +154,10 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    free_smileys = process_message_for_smiley(message, unicode_to_custom_smiley, text_to_custom_smiley)
-    if free_smileys:
-        smiley_message = " ".join(free_smileys)
+    smileys = process_message_for_smiley(message)
+    if smileys:
+        smiley_message = " ".join(smileys)
         await message.channel.send(smiley_message)
+
 
 bot.run(TOKEN)
