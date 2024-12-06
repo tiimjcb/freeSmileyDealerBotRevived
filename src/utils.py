@@ -1,8 +1,11 @@
 import datetime
+import random
 import sqlite3
 import logging
 import re
 from logger import logger
+
+friday_hours = []
 
 
 def normalize_emoji(emoji):
@@ -89,9 +92,23 @@ def add_guild_to_db(guild_id):
         conn.close()
 
 
-def is_friday_hour():
+def generate_friday_schedule():
     """
-    function that returns True if the current minute is 0 and the current day is friday
+    Generate a random schedule for Friday messages.
+    Between 5 and 12 times a day, at random hours and minutes.
+    """
+    times = []
+    num_messages = random.randint(5, 12)
+    for _ in range(num_messages):
+        hour = random.randint(0, 23)  # Heure entre 0 et 23
+        minute = random.randint(0, 59)  # Minute entre 0 et 59
+        times.append((hour, minute))
+    return times
+
+
+def is_friday_random_time():
+    """
+    check if the current time matches one of the pre-generated Friday times.
     """
     now = datetime.datetime.now()
-    return now.weekday() == 4 and now.minute == 20
+    return now.weekday() == 4 and (now.hour, now.minute) in friday_hours
