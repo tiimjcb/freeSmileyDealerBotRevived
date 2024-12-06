@@ -102,7 +102,7 @@ def process_message_for_smiley(message):
 
 
     # break the message into words
-    words = [normalize_emoji(word) for word in message.content.split()]
+    words = [normalize_emoji(word) for word in re.findall(r'\w+|[^\w\s]', message.content)]
     smileys = []
 
 
