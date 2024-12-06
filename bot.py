@@ -102,6 +102,7 @@ def process_message_for_smiley(message):
             logger.info(f"Trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
             smileys.append(result[2])
 
+    conn.close()
     return smileys if smileys else None
 
 
