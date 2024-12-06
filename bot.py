@@ -108,11 +108,13 @@ def process_message_for_smiley(message):
 
     # first : scan for special triggers
     for word in words:
+        word = word.lower()
         if text_reactions_enabled:
             cursor.execute("SELECT * FROM special_triggers WHERE word = ?", (word,))
         else:
             cursor.execute("SELECT * FROM special_triggers WHERE word = ? AND isEmoji = 1", (word,))
         result = cursor.fetchone()
+
         # smiley is in result[2]
         if result:
             logger.info(f"\n{user_name} in {guild_name} ({guild_id}) said the word {word}")
@@ -122,6 +124,7 @@ def process_message_for_smiley(message):
 
     # second : scan for regular triggers
     for word in words:
+        word = word.lower()
         if text_reactions_enabled:
             cursor.execute("SELECT * FROM trigger_words WHERE word = ?", (word,))
         else:
