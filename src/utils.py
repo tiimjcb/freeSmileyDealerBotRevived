@@ -98,10 +98,14 @@ def generate_friday_schedule():
     Between 5 and 12 times a day, at random hours and minutes.
     """
     times = []
-    num_messages = random.randint(5, 12)
+    num_messages = random.randint(15, 22)
     for _ in range(num_messages):
-        hour = random.randint(0, 23)  # Heure entre 0 et 23
-        minute = random.randint(0, 59)  # Minute entre 0 et 59
+        hour = random.choices(
+            population=range(24),
+            weights=[1] * 8 + [3] * 16,  # Weights: 1 for hours 0-7, 3 for hours 8-23
+            k=1
+        )[0]
+        minute = random.randint(0, 59)
         times.append((hour, minute))
     return times
 
