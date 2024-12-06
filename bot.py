@@ -74,7 +74,7 @@ def process_message_for_smiley(message):
     user_name = message.author.name
 
     # break the message into words
-    words = message.content.split()
+    words = [normalize_emoji(word) for word in message.content.split()]
     smileys = []
 
     # connect to the database
