@@ -1,13 +1,17 @@
+import asyncio
 import datetime
+import logging
 import sqlite3
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
 import os
-from logger import logger
-from utils import generate_friday_schedule, is_friday_random_time, friday_hours, add_guild_to_db, process_message_for_smiley
+from logger import logger, setup_discord_logging
+from utils import generate_friday_schedule, is_friday_random_time, friday_hours, add_guild_to_db, process_message_for_smiley, remove_guild_from_db, get_last_log_lines
 from discord.ext import tasks
 import random
+import sys
+
 
 ##################### VARIABLES #####################
 
@@ -36,15 +40,22 @@ friday_messages = [
 load_dotenv("../token.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
-    logger.error("====================================\n"
-                 "There is no token!!!\n"
-                 "====================================")
-    raise ValueError("There is no token!")
+    logger.critical("============================================================")
+    logger.critical("There is no token!!!")
+    logger.critical("============================================================")
+    sys.exit("There is no token!")
 
 ADMINGUILD = os.getenv("ADMIN_GUILD")
-ADMINUSER = os.getenv("ADMIN_USER")
+ADMINGUILD_YAP_CHANNEL = os.getenv("ADMIN_GUILD_YAP_CHANNEL")
+ADMINUSER_T = os.getenv("ADMIN_USER_T")
+ADMINUSER_A = os.getenv("ADMIN_USER_A")
+SUPPORTGUILD = os.getenv("SUPPORT_GUILD")
 
-
+if not ADMINGUILD or not ADMINUSER_T or not ADMINUSER_A or not SUPPORTGUILD:
+    logger.critical("============================================================")
+    logger.critical("There is no admin guild or admin user or support guild! -> There should be a problem with the .env file!")
+    logger.critical("============================================================")
+    sys.exit("There is no token!")
 
 ##################### DISCORD BOT CONFIGURATION #####################
 
@@ -53,12 +64,12 @@ bot = discord.Client(intents=intents)
 tree = app_commands.CommandTree(bot)
 
 
-
 ##################### DISCORD SLASH COMMANDS #####################
 
 @tree.command(name="ping", description="A simple ping command")
 async def ping(interaction):
     await interaction.response.send_message("pong <a:soccer:1313938627104866394>")
+    logger.info(f"{interaction.user} used the /ping command")
 
 
 @tree.command(name="help", description="A simple help command")
@@ -73,8 +84,8 @@ async def help_command(interaction):
                                             "- /set_smiley_messages : toggles on or off the smiley messages (bot sends emojis as messages)\n"
                                             "- /set_smiley_reactions : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n",
                                             ephemeral=True
-)
-
+    )
+    logger.info(f"{interaction.user} used the /help command")
 
 
 
@@ -119,7 +130,6 @@ async def set_text_triggers(interaction, enable: bool):
     logger.info(f"Text triggers settings modified for guild {guild_id}. Current status: {result[1]}")
 
     conn.close()
-
 
 
 # smiley messages settings - server_settings[2]
@@ -206,10 +216,17 @@ async def set_smiley_reactions(interaction, enable: bool):
 
 ##################### ADMINISTRATIVE COMMANDS #####################
 
-@tree.command(name="add_regular_trigger", description="add a regular trigger to the database")
+@tree.command(name="add_regular_trigger", description="Add a regular trigger to the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
 @app_commands.describe(trigger="trigger word", response="the response", is_emoji="true if the trigger is a smiley, false otherwise")
 async def add_regular_trigger(interaction, trigger: str, response: str, is_emoji: bool):
+    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
     cursor.execute("INSERT INTO trigger_words (word, smiley, isEmoji) VALUES (?, ?, ?)", (trigger, response, is_emoji))
@@ -226,10 +243,16 @@ async def add_regular_trigger(interaction, trigger: str, response: str, is_emoji
 
 
 
-@tree.command(name="add_special_trigger", description="add a special trigger to the database")
+@tree.command(name="add_special_trigger", description="Add a special trigger to the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
 @app_commands.describe(trigger="trigger word", response="the response", is_emoji="true if the trigger is a smiley, false otherwise")
 async def add_regular_trigger(interaction, trigger: str, response: str, is_emoji: bool):
+    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
     cursor.execute("INSERT INTO special_triggers (word, smiley, isEmoji) VALUES (?, ?, ?)", (trigger, response, is_emoji))
@@ -246,10 +269,16 @@ async def add_regular_trigger(interaction, trigger: str, response: str, is_emoji
 
 
 
-@tree.command(name="remove_regular_trigger", description="remove a regular trigger from the database")
+@tree.command(name="remove_regular_trigger", description="Remove a regular trigger from the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
 @app_commands.describe(trigger="trigger word to remove")
 async def remove_regular_trigger(interaction, trigger: str):
+    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
     cursor.execute("DELETE FROM trigger_words WHERE word = ?", (trigger,))
@@ -266,10 +295,16 @@ async def remove_regular_trigger(interaction, trigger: str):
 
 
 
-@tree.command(name="remove_special_trigger", description="remove a special trigger from the database")
+@tree.command(name="remove_special_trigger", description="Remove a special trigger from the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
 @app_commands.describe(trigger="trigger word to remove")
 async def remove_special_trigger(interaction, trigger: str):
+    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
     cursor.execute("DELETE FROM special_triggers WHERE word = ?", (trigger,))
@@ -284,6 +319,33 @@ async def remove_special_trigger(interaction, trigger: str):
 
     conn.close()
 
+
+@tree.command(name="logs", description="Get the n last lines of logs")
+@app_commands.guilds(discord.Object(id=ADMINGUILD))
+@app_commands.describe(n="Number of lines to get -- max 10, otherwise Discord won't allow it.")
+async def logs(interaction, n: int):
+    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    if n > 10:
+        await interaction.response.send_message(
+            "You can't get more than 10 lines of logs at once.",
+            ephemeral=True
+        )
+        return
+
+    log_dir = "../logs"  # Replace with your actual log directory
+    log_content = get_last_log_lines(n, log_dir)
+
+    # Send the response
+    await interaction.response.send_message(
+        f"```plaintext\n{log_content}\n```",
+        ephemeral=True
+    )
 
 
 
@@ -304,11 +366,9 @@ async def friday_message():
                 await channel.send(random_message)
                 await channel.send("<a:friday_1:1313928983578017843>")
             else:
-                logger.warning(f"Channel with ID {channel_id} not found in guild {guild_id}. Can't send the Friday message.")
+                logger.error(f"Channel with ID {channel_id} not found in guild {guild_id}. Can't send the Friday message.")
         else:
-            logger.warning(f"Guild with ID {guild_id} not found. Can't send the Friday message.")
-
-
+            logger.error(f"Guild with ID {guild_id} not found. Can't send the Friday message.")
 
 
 
@@ -321,6 +381,11 @@ async def on_ready():
     ## create the server settings database if it don't exist
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
+
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='server_settings';")
+    if not cursor.fetchone():
+        logger.warning("The server_settings table does not exist in the database.")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS server_settings (
         guild_id TEXT PRIMARY KEY,
@@ -335,32 +400,46 @@ async def on_ready():
     for guild in guild_list:
         add_guild_to_db(guild.id)
 
-    generate_friday_schedule()
-    logger.info(f"Generated Friday schedule: {friday_hours}")
-    friday_message.start()
+    if datetime.datetime.now().weekday() == 4:
+        generate_friday_schedule()
+        logger.info(f"Generated Friday schedule: {friday_hours}")
+        friday_message.start()
 
-    logger.info(f"\nBot started and connected as {bot.user} in {len(guild_list)} server!")
+    logger.info(f"Bot started and connected as {bot.user} in {len(guild_list)} server!")
     activity = discord.Activity(type=discord.ActivityType.competing, name=f" {len(guild_list)} servers to use free smileys")
     await bot.change_presence(status=discord.Status.online, activity=activity)
     try:
         await tree.sync()
         logger.info("Command tree synced globally!")
     except Exception as e:
-        logger.error(f"Error syncing command tree: {e}")
+        logger.critical(f"Error syncing command tree: {e}")
     try :
         guild = discord.Object(id=ADMINGUILD)
         await tree.sync(guild=guild)
         logger.info("Command tree synced in admin guild!")
     except Exception as e:
-        logger.error(f"Error syncing command tree in admin guild: {e}")
-
+        logger.critical(f"Error syncing command tree in admin guild: {e}")
 
 
 @bot.event
 async def on_guild_join(guild):
-    logger.info(f"\nBot has joined a new guild: {guild.name} (ID: {guild.id})")
+    logger.info("============================================================")
+    logger.info(f"Bot has joined a new guild: {guild.name} (ID: {guild.id})")
+    logger.info("============================================================")
+    admin_guild = bot.get_guild(int(ADMINGUILD))
+    channel = admin_guild.get_channel(int(ADMINGUILD_YAP_CHANNEL))
+    await channel.send(f"i joined a new guild: '{admin_guild.name}' <:happy:1315616444079145051>") ## different smileys codes because it's only for the test bot
     add_guild_to_db(guild.id)
 
+@bot.event
+async def on_guild_remove(guild):
+    logger.info("============================================================")
+    logger.info(f"Bot has been removed from a guild: {guild.name} (ID: {guild.id})")
+    logger.info("============================================================")
+    admin_guild = bot.get_guild(int(ADMINGUILD))
+    channel = admin_guild.get_channel(int(ADMINGUILD_YAP_CHANNEL))
+    await channel.send(f"i got kicked from the guild : '{admin_guild.name}' <:redAngry:1315616418540032000>") ## different smileys codes because it's only for the test bot
+    remove_guild_from_db(guild.id)
 
 
 @bot.event
@@ -399,7 +478,7 @@ async def on_message(message):
                     emoji_object = discord.PartialEmoji(name=smiley.split(":")[1], id=int(emoji_id))
                     await message.add_reaction(emoji_object)
                 except Exception as e:
-                    logger.warning(f"Failed to add reaction {smiley} to message: {e}")
+                    logger.error(f"Failed to add reaction {smiley} to message: {e}")
 
 
 bot.run(TOKEN)

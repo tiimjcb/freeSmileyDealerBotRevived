@@ -1,8 +1,8 @@
 import datetime
 import random
 import sqlite3
-import logging
 import re
+import os
 from logger import logger
 
 friday_hours = []
@@ -37,6 +37,7 @@ def process_message_for_smiley(message):
 
     # break the message into words
     words = [normalize_emoji(word) for word in re.findall(r'\w+|[^\w\s]', message.content)]
+    logger.debug(f"Words in the message : {words}")
     smileys = []
 
 
@@ -51,8 +52,8 @@ def process_message_for_smiley(message):
 
         # smiley is in result[2]
         if result:
-            logger.info(f"\n{user_name} in {guild_name} ({guild_id}) said the word {word}")
-            logger.info(f"Special trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
+            logger.info(f"{user_name} in {guild_name} said the word {word} -> proper response sent (special trigger)")
+            logger.debug(f"Special trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
             smileys.append(result[2])
             return smileys # we return at the first special trigger found because they have priority
 
@@ -66,8 +67,8 @@ def process_message_for_smiley(message):
         result = cursor.fetchone()
         # smiley is in result[2]
         if result:
-            logger.info(f"\n{user_name} in {guild_name} ({guild_id}) said the word {word}")
-            logger.info(f"Trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
+            logger.info(f"{user_name} in {guild_name} said the word {word} -> proper response sent")
+            logger.debug(f"Trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
             smileys.append(result[2])
 
     conn.close()
@@ -85,11 +86,28 @@ def add_guild_to_db(guild_id):
     cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
     result = cursor.fetchone()
     if not result:
-        logger.info(f"\nAdding guild {guild_id} to the server settings database.")
+        logger.info(f"Adding guild {guild_id} to the server settings database.")
         cursor.execute("INSERT INTO server_settings (guild_id) VALUES (?)", (guild_id,))
         conn.commit()
         logger.info(f"Guild {guild_id} added to the server settings database.")
         conn.close()
+
+def remove_guild_from_db(guild_id):
+    """
+    function that removes a guild from the server settings database
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+    if result:
+        logger.info(f"Removing guild {guild_id} from the server settings database.")
+        cursor.execute("DELETE FROM server_settings WHERE guild_id = ?", (guild_id,))
+        conn.commit()
+        logger.info(f"Guild {guild_id} removed from the server settings database.")
+        conn.close()
+
+
 
 
 def generate_friday_schedule():
@@ -116,3 +134,26 @@ def is_friday_random_time():
     """
     now = datetime.datetime.now()
     return now.weekday() == 4 and (now.hour, now.minute) in friday_hours
+
+
+def get_last_log_lines(n: int, log_dir: str):
+    """
+    Retrieves the last n lines from the most recently modified log file in the specified directory.
+    """
+    try:
+        # get the last modified log file
+        log_files = [f for f in os.listdir(log_dir) if f.endswith(".log")]
+        if not log_files:
+            raise FileNotFoundError("No log files found in the specified directory.")
+
+        log_files = sorted(log_files, key=lambda f: os.path.getmtime(os.path.join(log_dir, f)), reverse=True)
+        latest_log_file = os.path.join(log_dir, log_files[0])
+
+        # Read the last n lines
+        with open(latest_log_file, "r") as log_file:
+            lines = log_file.readlines()
+            return "".join(lines[-n:]) if len(lines) >= n else "".join(lines)
+
+    except Exception as e:
+        logger.error("An error occurred while reading the logs.")
+        return f"An error occurred while reading the logs: {e}"

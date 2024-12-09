@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
+import colorlog
 
 LOG_DIR = "../logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -20,24 +21,47 @@ def cleanup_old_logs():
             except ValueError:
                 continue
 
-# Ensure cleanup is performed
 cleanup_old_logs()
 
 today = datetime.now().strftime("%d-%m-%Y")
 log_filename = f"log-{today}.log"
 log_filepath = os.path.join(LOG_DIR, log_filename)
 
-logging.basicConfig(
-    filename=log_filepath,
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
+# colors
+log_colors = {
+    'DEBUG': 'green',
+    'INFO': 'blue',
+    'WARNING': 'yellow',
+    'ERROR': 'red',
+    'CRITICAL': 'bold_red',
+}
+
+# gray color for timestamp
+formatter = colorlog.ColoredFormatter(
+    "\033[90m%(asctime)s\033[0m [%(log_color)s\033[1m%(levelname)s\033[0m] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
+    log_colors=log_colors,
 )
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-console.setFormatter(formatter)
+
+# file handler
+file_handler = logging.FileHandler(log_filepath)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+))
+
+# log handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(formatter)
+
 logger = logging.getLogger("fsd_logger")
-logger.addHandler(console)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 logger.info("Logger initialized.")
+
+
+
