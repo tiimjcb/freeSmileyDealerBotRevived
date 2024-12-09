@@ -32,7 +32,8 @@ friday_messages = [
     "fish <:fish:1313927965519773818>",
     "i am the fridnay king <:king:1313883436129194064>",
     "IM NOT SURE YOU ALL KNOW THAT ITS FRIDAY <:tv:1313884206149144628>",
-    "attention guys, it's fridya !! <:exclamation_1:1313927841322373261>"
+    "attention guys, it's fridya !! <:exclamation_1:1313927841322373261>",
+    "today is friday, the best day of the week <:smile:1313938490130734592>",
 ]
 
 
