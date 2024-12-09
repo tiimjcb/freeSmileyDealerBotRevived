@@ -24,12 +24,32 @@ Simply click the installation link right here : [Installation link](https://disc
 It'll work right out of the box. Make sure you give it the permissions to read and send messages.
 
 
-## ⚠️ Bugs and Known Issues)
+## ⚠️ Bugs and Known Issues
 
 Due to the horrific process of importing all the smiley faces, ChatGPT was used to make it quicker. So, **bugs are expected**. 
 
 Big thanks to @Squelchyman for helping me simplify this process.
 
+## ⚙️ Available features
+
+The Free Smiley Dealer Bot Revived offers the following features:
+
+### Emoji and Text Trigger Responses
+- **Regular Triggers**: When the bot detects a specific emoji or word in a message, it sends the matching smiley. 
+- **Special Triggers**: High-priority triggers that send custom images or GIFs as responses. These take precedence over regular triggers if both are present in the same message.
+
+- **Text Responses**: Sent as regular messages.
+- **Reaction Responses**: Added as reactions to the original message.
+
+All the triggers are set on a database ! You can submit your suggestions on the Discord ! 😄
+
+### Server Settings
+
+You can customize the bot’s behavior per server:
+- Enable or disable **text triggers** (`/set_text_triggers`).
+- Toggle on/off **message** responses and **reactions** responses for triggers:
+  - `/set_smiley_messages`
+  - `/set_smiley_reactions`
 
 ## 💬 Contributing
 
