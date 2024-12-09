@@ -48,7 +48,7 @@ file_handler = logging.FileHandler(log_filepath)
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter(
     "%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 ))
 
 # log handler
@@ -60,6 +60,8 @@ logger = logging.getLogger("fsd_logger")
 logger.setLevel(logging.DEBUG)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
+
+file_handler.setFormatter(formatter)
 
 logger.info("Logger initialized.")
 
