@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 import os
-from logger import logger, setup_discord_logging
+from logger import logger
 from utils import generate_friday_schedule, is_friday_random_time, friday_hours, add_guild_to_db, process_message_for_smiley, remove_guild_from_db, get_last_log_lines
 from discord.ext import tasks
 import random
