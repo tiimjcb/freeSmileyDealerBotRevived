@@ -428,7 +428,7 @@ async def on_guild_join(guild):
     logger.info("============================================================")
     admin_guild = bot.get_guild(int(ADMINGUILD))
     channel = admin_guild.get_channel(int(ADMINGUILD_YAP_CHANNEL))
-    await channel.send(f"i joined a new guild: '{admin_guild.name}' <:yellow:1313941466862587997>")
+    await channel.send(f"i joined a new guild: '{guild.name}' <:yellow:1313941466862587997>")
     add_guild_to_db(guild.id)
 
 @bot.event
@@ -438,7 +438,7 @@ async def on_guild_remove(guild):
     logger.info("============================================================")
     admin_guild = bot.get_guild(int(ADMINGUILD))
     channel = admin_guild.get_channel(int(ADMINGUILD_YAP_CHANNEL))
-    await channel.send(f"i got kicked from the guild : '{admin_guild.name}' <:redAngry:1313876421227057193>")
+    await channel.send(f"i got kicked from the guild : '{guild.name}' <:redAngry:1313876421227057193>")
     remove_guild_from_db(guild.id)
 
 
