@@ -404,7 +404,12 @@ async def friday_message():
         else:
             logger.error(f"Guild with ID {guild_id} not found. Can't send the Friday message.")
 
+##################### DISCORD BOT FUNCTIONS #####################
 
+async def update_activity_status():
+        activity = discord.Activity(type=discord.ActivityType.competing,
+                                    name=f" {len(bot.guilds)} servers to use free smileys")
+        await bot.change_presence(status=discord.Status.online, activity=activity)
 
 
 
@@ -440,8 +445,7 @@ async def on_ready():
         friday_message.start()
 
     logger.info(f"Bot started and connected as {bot.user} in {len(guild_list)} server!")
-    activity = discord.Activity(type=discord.ActivityType.competing, name=f" {len(guild_list)} servers to use free smileys")
-    await bot.change_presence(status=discord.Status.online, activity=activity)
+    await update_activity_status()
     try:
         await tree.sync()
         logger.info("Command tree synced globally!")
@@ -464,6 +468,7 @@ async def on_guild_join(guild):
     channel = admin_guild.get_channel(int(ADMINGUILD_YAP_CHANNEL))
     await channel.send(f"i joined a new guild: '{guild.name}' <:yellow:1313941466862587997>")
     add_guild_to_db(guild.id)
+    await update_activity_status()
 
 @bot.event
 async def on_guild_remove(guild):
@@ -474,6 +479,8 @@ async def on_guild_remove(guild):
     channel = admin_guild.get_channel(int(ADMINGUILD_YAP_CHANNEL))
     await channel.send(f"i got kicked from the guild : '{guild.name}' <:redAngry:1313876421227057193>")
     remove_guild_from_db(guild.id)
+    await update_activity_status()
+
 
 
 @bot.event
