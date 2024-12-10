@@ -7,6 +7,7 @@ from logger import logger
 
 friday_hours = []
 
+## Smiley things
 
 def normalize_emoji(emoji):
     """
@@ -14,8 +15,6 @@ def normalize_emoji(emoji):
     """
     skin_tone_modifiers = re.compile(r'[\U0001F3FB-\U0001F3FF]')
     return skin_tone_modifiers.sub('', emoji)
-
-
 
 def process_message_for_smiley(message):
     """
@@ -35,7 +34,7 @@ def process_message_for_smiley(message):
     text_reactions_enabled = cursor.fetchone()[0]
 
 
-    # break the message into words
+    # break the message into words -> we use the normalize_emoji() function to remove skin tone modifiers
     words = [normalize_emoji(word) for word in re.findall(r'\w+|[^\w\s]', message.content)]
     smileys = []
 
@@ -51,8 +50,8 @@ def process_message_for_smiley(message):
 
         # smiley is in result[2]
         if result:
-            logger.info(f"{user_name} in {guild_name} said the word {word} -> proper response sent (special trigger)")
-            logger.debug(f"Special trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
+            logger.info(f"{user_name} in {guild_name} said the word '{word}' -> proper response sent (special trigger)")
+            logger.debug(f"Special trigger word found - ID: '{result[0]}', Trigger : '{result[1]}', Response: '{result[2]}', isEmoji : '{result[3]}'")
             smileys.append(result[2])
             return smileys # we return at the first special trigger found because they have priority
 
@@ -66,15 +65,42 @@ def process_message_for_smiley(message):
         result = cursor.fetchone()
         # smiley is in result[2]
         if result:
-            logger.info(f"{user_name} in {guild_name} said the word {word} -> proper response sent")
-            logger.debug(f"Trigger word found - ID: {result[0]}, Trigger : {result[1]}, Response: {result[2]}, isEmoji : {result[3]}")
+            logger.info(f"{user_name} in {guild_name} said the word '{word}' -> Smiley sent")
+            logger.debug(f"Trigger word found - ID: '{result[0]}', Trigger : '{result[1]}', Response: '{result[2]}', isEmoji : '{result[3]}'")
             smileys.append(result[2])
 
     conn.close()
     return smileys if smileys else None
 
 
+def get_random_smiley(db_path='../databases/bot.db'):
+    """
+    function that fetches a random smiley from the database.
 
+    :param db_path: the path to the database file -- by default the bot.db file
+    :return: a random smiley, or None if no smileys are found
+    """
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT DISTINCT smiley FROM trigger_words")
+        smileys = cursor.fetchall()
+
+        if not smileys:
+            logger.critical("No smileys found in the database for random selection.")
+            return "CRIT_ERR"
+
+        random_smiley = random.choice(smileys)[0]
+        return random_smiley
+
+    except Exception as e:
+        logger.error(f"Error fetching a random smiley: {e}")
+        return "ERR"
+
+    finally:
+        conn.close()
+
+## Guild things
 
 def add_guild_to_db(guild_id):
     """
@@ -107,7 +133,6 @@ def remove_guild_from_db(guild_id):
         conn.close()
 
 
-
 ### Blacklist things
 
 def is_blacklisted(guild_id, channel_id):
@@ -123,7 +148,6 @@ def is_blacklisted(guild_id, channel_id):
     result = cursor.fetchone()
     conn.close()
     return result is not None
-
 
 def add_channel_to_blacklist(guild_id, channel_id):
     """
@@ -183,6 +207,8 @@ def is_friday_random_time():
     now = datetime.datetime.now()
     return now.weekday() == 4 and (now.hour, now.minute) in friday_hours
 
+
+## Log things
 
 def get_last_log_lines(n: int, log_dir: str):
     """

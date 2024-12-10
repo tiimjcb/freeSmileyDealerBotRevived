@@ -50,7 +50,13 @@ You can customize the bot’s behavior per server:
 - Toggle on/off **message** responses and **reactions** responses for triggers:
   - `/set_smiley_messages`
   - `/set_smiley_reactions`
+- **Blacklist** specific channels from triggering the bot (`/blacklist_channel`).
 
+### Other functions
+
+- **Help Command**: `/help` to get a list of available commands.
+- **Ping Command**: `/ping` to check the bot’s latency.
+- **Random smiley command**: `/random` to get a random smiley face.
 ## 💬 Contributing
 
 If you’d like to contribute, feel free to join the new Discord server : [https://discord.gg/Vg96qSNGf9](https://discord.gg/Vg96qSNGf9)
@@ -61,7 +67,7 @@ You can also contact me on Discord : @tiim.jcb
 
 This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
-You are free to: [Installation Link](https://discord.com/oauth2/authorize?client_id=1313839534324318290&permissions=274877910016&integration_type=0&scope=bot).
+You are free to:
 
 - Use, modify, and distribute the code for personal or commercial purposes.
 - Contribute to the project or adapt it for your own use.

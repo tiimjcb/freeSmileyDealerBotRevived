@@ -93,7 +93,21 @@ async def help_command(interaction):
     )
     logger.info(f"{interaction.user} used the /help command")
 
+@tree.command(name="random", description="Get a random smiley")
+async def random_smiley(interaction):
+    smiley = get_random_smiley()
+    if smiley == "CRIT_ERR":
+        await interaction.response.send_message("There's a critical error. Please IMMEDIATLY contact my creator. @tiim.jcb", ephemeral=True)
+    elif smiley == "ERR":
+        await interaction.response.send_message("There was an error fetching a random smiley. Please try again later.", ephemeral=True)
+    elif smiley:
+        await interaction.response.send_message("there's your random **free** smiley. never use paid ones.")
+        await interaction.channel.send(smiley)
+        logger.info(f"{interaction.user} used the /random_smiley command and got the smiley {smiley}")
+    else:
+        raise Exception("Error with the get_random_smiley function.")
 
+##################### GUILD ADMINISTRATIVE COMMANDS #####################
 
 # text triggers settings - server_settings[1]
 @tree.command(name="set_text_triggers", description="Enable or disable text triggers (e.g., 'hi')")
@@ -217,7 +231,7 @@ async def set_smiley_reactions(interaction, enable: bool):
     conn.close()
 
 
-# blacklist channels
+# blacklist channels -- different table in the db (channel_blacklist)
 @tree.command(name="blacklist", description="Toggle blacklist status for a channel")
 @app_commands.describe(channel="Mention the channel (e.g., #general) you want to toggle blacklist status for")
 async def blacklist_channel(interaction, channel: discord.TextChannel):
@@ -247,7 +261,7 @@ async def blacklist_channel(interaction, channel: discord.TextChannel):
 
 
 
-##################### ADMINISTRATIVE COMMANDS #####################
+##################### BOT ADMINISTRATIVE COMMANDS #####################
 
 @tree.command(name="add_regular_trigger", description="Add a regular trigger to the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
@@ -428,6 +442,7 @@ async def friday_message():
         else:
             logger.error(f"Guild with ID {guild_id} not found. Can't send the Friday message.")
 
+
 ##################### DISCORD BOT FUNCTIONS #####################
 
 async def update_activity_status():
@@ -437,8 +452,10 @@ async def update_activity_status():
 
 
 
+
 ##################### DISCORD BOT EVENTS #####################
 
+## Bot events
 @bot.event
 async def on_ready():
     ## create the server settings database if it don't exist
@@ -483,6 +500,7 @@ async def on_ready():
         logger.critical(f"Error syncing command tree in admin guild: {e}")
 
 
+## Guild events
 @bot.event
 async def on_guild_join(guild):
     logger.info("============================================================")
@@ -507,6 +525,7 @@ async def on_guild_remove(guild):
 
 
 
+## Message event -- basically the main function of the bot lol
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -545,8 +564,8 @@ async def on_message(message):
                     emoji_id = smiley.split(":")[-1][:-1]
                     emoji_object = discord.PartialEmoji(name=smiley.split(":")[1], id=int(emoji_id))
                     await message.add_reaction(emoji_object)
-                except Exception as e:
-                    logger.error(f"Failed to add reaction {smiley} to message: {e}")
+                except Exception:
+                    logger.error(f"Failed to add reaction {smiley} to message -> might be because it's a special trigger. if it is, all good.")
 
 
 bot.run(TOKEN)
