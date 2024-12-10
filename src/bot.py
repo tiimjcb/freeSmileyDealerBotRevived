@@ -76,17 +76,18 @@ async def ping(interaction):
 
 @tree.command(name="help", description="A simple help command")
 async def help_command(interaction):
-    await interaction.response.send_message(f"hey there <:yellow:1313941466862587997> \n"
-                                            "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n"
-                                            "# Commands\n"
-                                            "- /ping : a simple ping command \n"
-                                            "- /help : this help message \n"
-                                            "# Admin commands \n"
-                                            "- /set_text_triggers : toggles on or off the text triggers (like 'hi')\n"
-                                            "- /set_smiley_messages : toggles on or off the smiley messages (bot sends emojis as messages)\n"
-                                            "- /set_smiley_reactions : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n",
-                                            "- /blacklist : toggles on or off the blacklist for the channel you're using the command in\n",
-                                            ephemeral=True
+    await interaction.response.send_message(
+        f"hey there <:yellow:1313941466862587997> \n"
+        "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n"
+        "# Commands\n"
+        "- /ping : a simple ping command \n"
+        "- /help : this help message \n"
+        "# Admin commands \n"
+        "- /set_text_triggers : toggles on or off the text triggers (like 'hi')\n"
+        "- /set_smiley_messages : toggles on or off the smiley messages (bot sends emojis as messages)\n"
+        "- /set_smiley_reactions : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
+        "- /blacklist : toggles on or off the blacklist for the channel you're using the command in\n",
+        ephemeral=True
     )
     logger.info(f"{interaction.user} used the /help command")
 
@@ -215,37 +216,33 @@ async def set_smiley_reactions(interaction, enable: bool):
 
 
 # blacklist channels
-@tree.command(name="blacklist", description="Blacklist a channel from the bot (use it in the channel you want to blacklist)")
-@app_commands.describe(enable="True to blacklist this channel, False to remove it from the blacklist")
-async def blacklist_channel(interaction, enable: bool):
+@tree.command(name="blacklist", description="Toggle blacklist status for a channel")
+@app_commands.describe(channel="Mention the channel (e.g., #general) you want to toggle blacklist status for")
+async def blacklist_channel(interaction, channel: discord.TextChannel):
 
-        # usual admin check
-        if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message(
-                "You do not have permission to use this command. Only administrators can blacklist channels. <:redAngry:1313876421227057193>",
-                ephemeral=True
-            )
-            return
+    # Usual admin check
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can manage the blacklist. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
 
-        guild_id = interaction.guild_id
-        channel_id = interaction.channel_id
+    guild_id = interaction.guild_id
+    channel_id = channel.id
 
-        result = is_blacklisted(guild_id, channel_id)
+    result = is_blacklisted(guild_id, channel_id)
 
-        if enable:
-            logger.info(f"The user {interaction.user} is trying to blacklist the channel {channel_id} in the guild {guild_id}")
-            if result:
-                await interaction.response.send_message(f"This channel is already blacklisted. <:redAngry:1313876421227057193>", ephemeral=True)
-            else:
-                add_channel_to_blacklist(guild_id, channel_id)
-                await interaction.response.send_message(f"This channel has been blacklisted. <a:bigCry:1313925251108835348>", ephemeral=True)
-        else:
-            logger.info(f"The user {interaction.user} is trying to remove from blacklist the channel {channel_id} in the guild {guild_id}")
-            if result:
-                remove_channel_from_blacklist(guild_id, channel_id)
-                await interaction.response.send_message(f"This channel has been removed from the blacklist. <:yellow:1313941466862587997>", ephemeral=True)
-            else:
-                await interaction.response.send_message(f"This channel is not blacklisted. <:yellow:1313941466862587997>", ephemeral=True)
+    if result:
+        remove_channel_from_blacklist(guild_id, channel_id)
+        await interaction.response.send_message(f"The channel {channel.mention} has been removed from the blacklist. <:yellow:1313941466862587997>", ephemeral=True)
+        logger.info(f"Channel {channel_id} in guild {guild_id} removed from blacklist by {interaction.user}.")
+    else:
+        add_channel_to_blacklist(guild_id, channel_id)
+        await interaction.response.send_message(f"The channel {channel.mention} has been blacklisted. <a:bigCry:1313925251108835348>", ephemeral=True)
+        logger.info(f"Channel {channel_id} in guild {guild_id} blacklisted by {interaction.user}.")
+
+
 
 
 ##################### ADMINISTRATIVE COMMANDS #####################
