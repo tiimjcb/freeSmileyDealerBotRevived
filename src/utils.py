@@ -108,6 +108,55 @@ def remove_guild_from_db(guild_id):
 
 
 
+### Blacklist things
+
+def is_blacklisted(guild_id, channel_id):
+    """
+    function that checks if a channel in a certain guild is blacklisted
+    :param guild_id: the guild id
+    :param channel_id: the channel id
+    :return: boolean, true if blacklisted, false if not
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM channel_blacklist WHERE guild_id = ? AND channel_id = ?", (guild_id, channel_id))
+    result = cursor.fetchone()
+    conn.close()
+    return result is not None
+
+
+def add_channel_to_blacklist(guild_id, channel_id):
+    """
+    function that adds a channel to the blacklist
+    :param guild_id: the guild id
+    :param channel_id: the channel id
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    result = is_blacklisted(guild_id, channel_id)
+    if not result:
+        cursor.execute("INSERT INTO channel_blacklist (guild_id, channel_id) VALUES (?, ?)", (guild_id, channel_id))
+        conn.commit()
+        logger.info(f"Channel {channel_id} from guild {guild_id} added to the blacklist.")
+    conn.close()
+
+def remove_channel_from_blacklist(guild_id, channel_id):
+    """
+    function that removes a channel from the blacklist
+    :param guild_id: the guild id
+    :param channel_id: the channel id
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    result = is_blacklisted(guild_id, channel_id)
+    if result:
+        cursor.execute("DELETE FROM channel_blacklist WHERE guild_id = ? AND channel_id = ?", (guild_id, channel_id))
+        conn.commit()
+        logger.info(f"Channel {channel_id} from guild {guild_id} removed from the blacklist.")
+    conn.close()
+
+
+### Friday things
 
 def generate_friday_schedule():
     """

@@ -7,7 +7,7 @@ from discord import app_commands
 from dotenv import load_dotenv
 import os
 from logger import logger
-from utils import generate_friday_schedule, is_friday_random_time, friday_hours, add_guild_to_db, process_message_for_smiley, remove_guild_from_db, get_last_log_lines
+from utils import *
 from discord.ext import tasks
 import random
 import sys
@@ -69,8 +69,9 @@ tree = app_commands.CommandTree(bot)
 
 @tree.command(name="ping", description="A simple ping command")
 async def ping(interaction):
-    await interaction.response.send_message("pong <a:soccer:1313938627104866394>")
-    logger.info(f"{interaction.user} used the /ping command")
+    latency = round(bot.latency * 1000)
+    await interaction.response.send_message(f"pong! ({latency}ms) <a:soccer:1313938627104866394>")
+    logger.info(f"{interaction.user} used the /ping command with latency {latency}ms")
 
 
 @tree.command(name="help", description="A simple help command")
@@ -87,7 +88,6 @@ async def help_command(interaction):
                                             ephemeral=True
     )
     logger.info(f"{interaction.user} used the /help command")
-
 
 
 
@@ -213,6 +213,38 @@ async def set_smiley_reactions(interaction, enable: bool):
     conn.close()
 
 
+# blacklist channels
+@tree.command(name="blacklist_channel", description="Blacklist a channel from the bot (use it in the channel you want to blacklist)")
+@app_commands.describe(enable="True to blacklist this channel, False to remove it from the blacklist")
+async def blacklist_channel(interaction, enable: bool):
+
+        # usual admin check
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message(
+                "You do not have permission to use this command. Only administrators can blacklist channels. <:redAngry:1313876421227057193>",
+                ephemeral=True
+            )
+            return
+
+        guild_id = interaction.guild_id
+        channel_id = interaction.channel_id
+
+        result = is_blacklisted(guild_id, channel_id)
+
+        if enable:
+            logger.info(f"The user {interaction.user} is trying to blacklist the channel {channel_id} in the guild {guild_id}")
+            if result:
+                await interaction.response.send_message(f"This channel is already blacklisted. <:redAngry:1313876421227057193>", ephemeral=True)
+            else:
+                add_channel_to_blacklist(guild_id, channel_id)
+                await interaction.response.send_message(f"This channel has been blacklisted. <a:bigCry:1313925251108835348>", ephemeral=True)
+        else:
+            logger.info(f"The user {interaction.user} is trying to remove from blacklist the channel {channel_id} in the guild {guild_id}")
+            if result:
+                remove_channel_from_blacklist(guild_id, channel_id)
+                await interaction.response.send_message(f"This channel has been removed from the blacklist. <:yellow:1313941466862587997>", ephemeral=True)
+            else:
+                await interaction.response.send_message(f"This channel is not blacklisted. <:yellow:1313941466862587997>", ephemeral=True)
 
 
 ##################### ADMINISTRATIVE COMMANDS #####################
@@ -446,6 +478,9 @@ async def on_guild_remove(guild):
 @bot.event
 async def on_message(message):
     if message.author.bot:
+        return
+
+    if is_blacklisted(message.guild.id, message.channel.id):
         return
 
     # get server settings
