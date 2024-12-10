@@ -85,6 +85,7 @@ async def help_command(interaction):
                                             "- /set_text_triggers : toggles on or off the text triggers (like 'hi')\n"
                                             "- /set_smiley_messages : toggles on or off the smiley messages (bot sends emojis as messages)\n"
                                             "- /set_smiley_reactions : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n",
+                                            "- /blacklist : toggles on or off the blacklist for the channel you're using the command in\n",
                                             ephemeral=True
     )
     logger.info(f"{interaction.user} used the /help command")
@@ -214,7 +215,7 @@ async def set_smiley_reactions(interaction, enable: bool):
 
 
 # blacklist channels
-@tree.command(name="blacklist_channel", description="Blacklist a channel from the bot (use it in the channel you want to blacklist)")
+@tree.command(name="blacklist", description="Blacklist a channel from the bot (use it in the channel you want to blacklist)")
 @app_commands.describe(enable="True to blacklist this channel, False to remove it from the blacklist")
 async def blacklist_channel(interaction, enable: bool):
 
