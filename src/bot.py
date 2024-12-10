@@ -1,16 +1,11 @@
-import asyncio
-import datetime
-import logging
-import sqlite3
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
-import os
-from logger import logger
 from utils import *
 from discord.ext import tasks
 import random
 import sys
+import subprocess
 
 
 ##################### VARIABLES #####################
@@ -38,7 +33,7 @@ friday_messages = [
 
 
 # get the token
-load_dotenv("../token.env")
+load_dotenv("../var.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
     logger.critical("============================================================")
@@ -51,12 +46,19 @@ ADMINGUILD_YAP_CHANNEL = os.getenv("ADMIN_GUILD_YAP_CHANNEL")
 ADMINUSER_T = os.getenv("ADMIN_USER_T")
 ADMINUSER_A = os.getenv("ADMIN_USER_A")
 SUPPORTGUILD = os.getenv("SUPPORT_GUILD")
+UPDATE_PATH = os.getenv("UPDATE_PATH")
 
-if not ADMINGUILD or not ADMINUSER_T or not ADMINUSER_A or not SUPPORTGUILD:
+if not ADMINGUILD or not ADMINUSER_T or not ADMINUSER_A or not SUPPORTGUILD or not ADMINGUILD_YAP_CHANNEL:
     logger.critical("============================================================")
     logger.critical("There is no admin guild or admin user or support guild! -> There should be a problem with the .env file!")
     logger.critical("============================================================")
-    sys.exit("There is no token!")
+    sys.exit("There is no admin guild!")
+
+if not UPDATE_PATH:
+    logger.critical("============================================================")
+    logger.critical("There is no update path! -> There should be a problem with the .env file!")
+    logger.critical("============================================================")
+    sys.exit("There is no update path!")
 
 ##################### DISCORD BOT CONFIGURATION #####################
 
@@ -378,6 +380,31 @@ async def logs(interaction, n: int):
         ephemeral=True
     )
 
+
+@tree.command(name="update_bot", description="Update the bot code and restart it")
+@app_commands.guilds(discord.Object(id=ADMINGUILD))
+async def update_bot(interaction):
+    if interaction.user.id not in {int(ADMINUSER_T), int(ADMINUSER_A)}:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only the administrators of the bot can use this! <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message(
+        "Updating the bot... The bot will restart shortly. Please wait. <:yellow:1313941466862587997>",
+    )
+
+    try:
+        subprocess.Popen([UPDATE_PATH], shell=False)
+
+        await interaction.followup.send(
+            "The bot is restarting. This might take a few seconds. <:yellow:1313941466862587997>",
+        )
+    except Exception as e:
+        await interaction.followup.send(
+            f"An error occurred while updating the bot: <:redAngry:1313876421227057193> \n```plaintext\n{str(e)}\n```",
+        )
 
 
 
