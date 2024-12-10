@@ -101,8 +101,7 @@ async def random_smiley(interaction):
     elif smiley == "ERR":
         await interaction.response.send_message("There was an error fetching a random smiley. Please try again later.", ephemeral=True)
     elif smiley:
-        await interaction.response.send_message("there's your random **free** smiley. never use paid ones.")
-        await interaction.channel.send(smiley)
+        await interaction.response.send_message(smiley)
         logger.info(f"{interaction.user} used the /random_smiley command and got the smiley {smiley}")
     else:
         raise Exception("Error with the get_random_smiley function.")
