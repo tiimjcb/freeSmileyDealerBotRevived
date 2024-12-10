@@ -16,6 +16,36 @@ def normalize_emoji(emoji):
     skin_tone_modifiers = re.compile(r'[\U0001F3FB-\U0001F3FF]')
     return skin_tone_modifiers.sub('', emoji)
 
+
+def is_regional_indicator(char):
+    """
+    checks if a character is a regional indicator symbol
+    """
+    return '\U0001F1E6' <= char <= '\U0001F1FF'
+
+
+def merge_regional_indicators(words):
+    """
+    merge the regional indicator symbols in a list into a single emoji if they are adjacent while preserving all other elements in the list.
+    """
+    merged_words = []
+    skip_next = False
+
+    for i in range(len(words)):
+        if skip_next:
+            skip_next = False
+            continue
+
+        if is_regional_indicator(words[i]) and i + 1 < len(words) and is_regional_indicator(words[i + 1]):
+            merged_words.append(words[i] + words[i + 1])
+            skip_next = True
+        else:
+            merged_words.append(words[i])
+
+    return merged_words
+
+
+
 def process_message_for_smiley(message):
     """
     return the smileys of the emojis in a string that has an occurence in the database.
@@ -36,6 +66,9 @@ def process_message_for_smiley(message):
 
     # break the message into words -> we use the normalize_emoji() function to remove skin tone modifiers
     words = [normalize_emoji(word) for word in re.findall(r'\w+|[^\w\s]', message.content)]
+    #logger.debug(f"Words: {words}")                # commented because it's useful for debugging. disabled on host.
+    words = merge_regional_indicators(words)
+    #logger.debug(f"Processed words: {words}")      # idem
     smileys = []
 
 
