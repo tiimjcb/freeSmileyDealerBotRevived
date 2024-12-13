@@ -91,7 +91,8 @@ async def help_command(interaction):
         "> - `/set_smiley_messages` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
         "> - `/set_smiley_reactions` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
         "> - `/blacklist_channel` : toggles on or off the blacklist for the channel you're using the command in\n"
-        "> - `/blacklist_trigger` : toggles on or off the blacklist for a specific trigger\n",
+        "> - `/blacklist_trigger` : toggles on or off the blacklist for a specific trigger\n"
+        "> - `/show_blacklisted_triggers` : shows the list of blacklisted triggers for this server\n",
         ephemeral=True
     )
     logger.info(f"{interaction.user} used the /help command")
