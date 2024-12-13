@@ -87,11 +87,11 @@ async def help_command(interaction):
         "> - `/random` : get a random smiley \n"
         "\n"
         "# Admin commands \n"
-        "> - `/set_text_triggers` : toggles on or off the text triggers (like 'hi')\n"
-        "> - `/set_smiley_messages` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
-        "> - `/set_smiley_reactions` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
-        "> - `/blacklist_channel` : toggles on or off the blacklist for the channel you're using the command in\n"
-        "> - `/blacklist_trigger` : toggles on or off the blacklist for a specific trigger\n"
+        "> - `/set_text_triggers [true/false]` : toggles on or off the text triggers (like 'hi')\n"
+        "> - `/set_smiley_messages [true/false]` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
+        "> - `/set_smiley_reactions [true/false]` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
+        "> - `/blacklist_channel [#channel]` : toggles on or off the blacklist for the channel you're using the command in\n"
+        "> - `/blacklist_trigger [trigger]` : toggles on or off the blacklist for a specific trigger\n"
         "> - `/show_blacklisted_triggers` : shows the list of blacklisted triggers for this server\n",
         ephemeral=True
     )
