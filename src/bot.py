@@ -79,14 +79,14 @@ async def ping(interaction):
 @tree.command(name="help", description="A simple help command")
 async def help_command(interaction):
     await interaction.response.send_message(
-        f"hey there <:yellow:1313941466862587997> \n"
+        f"hey there \n"
         "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n"
-        "# Commands\n"
+        "# Commands <:yellow:1313941466862587997>\n"
         "> - `/ping` : a simple ping command \n"
         "> - `/help` : this help message \n"
         "> - `/random` : get a random smiley \n"
         "\n"
-        "# Admin commands \n"
+        "# Admin commands <:nerd:1313933240486203522>\n"
         "> - `/set_text_triggers [true/false]` : toggles on or off the text triggers (like 'hi')\n"
         "> - `/set_smiley_messages [true/false]` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
         "> - `/set_smiley_reactions [true/false]` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
