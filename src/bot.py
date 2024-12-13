@@ -120,16 +120,24 @@ async def friday_schedule(interaction):
         return
 
     sorted_schedule = sorted(friday_hours)
-
     now = datetime.datetime.now()
 
     message = "### Today, I'll yap at:\n"
     for hour, minute in sorted_schedule:
-        time_formatted = f"{hour:02}:{minute:02}"
-        if now.hour > hour or (now.hour == hour and now.minute > minute):
-            message += f"> - ~~{time_formatted}~~\n"
+        target_time = datetime.datetime.combine(now.date(), datetime.time(hour, minute))
+        timestamp = int(target_time.timestamp())
+
+        ## we need to determine if it rolls into the last or next day (time zones stuff yk)
+        day_adjustment = ""
+        if target_time.weekday() < 4:
+            day_adjustment = " (-1)"
+        elif target_time.weekday() > 4:
+            day_adjustment = " (+1)"
+
+        if now > target_time:
+            message += f"> - ~~<t:{timestamp}:t>{day_adjustment}~~\n"
         else:
-            message += f"> - {time_formatted}\n"
+            message += f"> - <t:{timestamp}:t>{day_adjustment}\n"
 
     await interaction.response.send_message(message, ephemeral=True)
     logger.info(f"{interaction.user} used the /friday_schedule command to see the Friday schedule.")
