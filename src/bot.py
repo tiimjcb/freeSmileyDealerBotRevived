@@ -82,13 +82,16 @@ async def help_command(interaction):
         f"hey there <:yellow:1313941466862587997> \n"
         "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n"
         "# Commands\n"
-        "- /ping : a simple ping command \n"
-        "- /help : this help message \n"
+        "> - `/ping` : a simple ping command \n"
+        "> - `/help` : this help message \n"
+        "> - `/random` : get a random smiley \n"
+        "\n"
         "# Admin commands \n"
-        "- /set_text_triggers : toggles on or off the text triggers (like 'hi')\n"
-        "- /set_smiley_messages : toggles on or off the smiley messages (bot sends emojis as messages)\n"
-        "- /set_smiley_reactions : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
-        "- /blacklist : toggles on or off the blacklist for the channel you're using the command in\n",
+        "> - `/set_text_triggers` : toggles on or off the text triggers (like 'hi')\n"
+        "> - `/set_smiley_messages` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
+        "> - `/set_smiley_reactions` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
+        "> - `/blacklist_channel` : toggles on or off the blacklist for the channel you're using the command in\n"
+        "> - `/blacklist_trigger` : toggles on or off the blacklist for a specific trigger\n",
         ephemeral=True
     )
     logger.info(f"{interaction.user} used the /help command")
