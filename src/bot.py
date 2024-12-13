@@ -28,7 +28,7 @@ friday_messages = [
     "i am the fridnay king <:king:1313883436129194064>",
     "IM NOT SURE YOU ALL KNOW THAT ITS FRIDAY <:tv:1313884206149144628>",
     "attention guys, it's fridya !! <:exclamation_1:1313927841322373261>",
-    "today is friday, the best day of the week <:smile:1313938490130734592>",
+    "today is friday, the best day of the week <:happy:1313889573876662323>",
 ]
 
 
@@ -105,6 +105,35 @@ async def random_smiley(interaction):
         logger.info(f"{interaction.user} used the /random_smiley command and got the smiley {smiley}")
     else:
         raise Exception("Error with the get_random_smiley function.")
+
+
+##################### GET FRIDAY SCHEDULE COMMAND #########################
+
+@tree.command(name="friday_schedule", description="See the Friday yapping schedule")
+@app_commands.guilds(discord.Object(id=1231115041432928326))
+async def friday_schedule(interaction):
+    if datetime.datetime.now().weekday() != 4:
+        await interaction.response.send_message(
+            "It's not Friday yet (at least in France), there's no schedule to show. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    sorted_schedule = sorted(friday_hours)
+
+    now = datetime.datetime.now()
+
+    message = "### Today, I'll yap at:\n"
+    for hour, minute in sorted_schedule:
+        time_formatted = f"{hour:02}:{minute:02}"
+        if now.hour > hour or (now.hour == hour and now.minute > minute):
+            message += f"> - ~~{time_formatted}~~\n"
+        else:
+            message += f"> - {time_formatted}\n"
+
+    await interaction.response.send_message(message, emphemeral=True)
+    logger.info(f"{interaction.user} used the /friday_schedule command to see the Friday schedule.")
+
 
 ##################### GUILD ADMINISTRATIVE COMMANDS #####################
 
