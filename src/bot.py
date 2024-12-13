@@ -262,7 +262,7 @@ async def set_smiley_reactions(interaction, enable: bool):
 
 
 # blacklist channels -- different table in the db (channel_blacklist)
-@tree.command(name="blacklist", description="Toggle blacklist status for a channel")
+@tree.command(name="blacklist_channel", description="Toggle blacklist status for a channel")
 @app_commands.describe(channel="Mention the channel (e.g., #general) you want to toggle blacklist status for")
 async def blacklist_channel(interaction, channel: discord.TextChannel):
 
@@ -288,6 +288,79 @@ async def blacklist_channel(interaction, channel: discord.TextChannel):
         await interaction.response.send_message(f"The channel {channel.mention} has been blacklisted. <a:bigCry:1313925251108835348>", ephemeral=True)
         logger.info(f"Channel {channel_id} in guild {guild_id} blacklisted by {interaction.user}.")
 
+
+@tree.command(name="blacklist_trigger", description="Set or remove blacklist for a trigger for this server")
+@app_commands.describe(trigger_word="The word or emoji to (un)blacklist for this server")
+async def blacklist_trigger(interaction, trigger_word: str):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can blacklist triggers. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    guild_id = interaction.guild_id
+
+    # db connection
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    # we need to grab the id of the trigger
+    cursor.execute("SELECT id FROM triggers WHERE word = ?", (trigger_word,))
+    trigger_id = cursor.fetchone()
+
+    # stop point : the trigger doesn't exist
+    if not trigger_id:
+        await interaction.response.send_message(
+            f"The trigger '{trigger_word}' does not exist. <:scream:1313937550054002769>",
+            ephemeral=True
+        )
+        conn.close()
+        return
+
+    cursor.execute("SELECT 1 FROM triggers_blacklist WHERE guild_id = ? AND trigger_id = ?", (guild_id, trigger_id[0]))
+    if cursor.fetchone():
+        cursor.execute("DELETE FROM triggers_blacklist WHERE guild_id = ? AND trigger_id = ?",(guild_id, trigger_id[0]))
+        conn.commit()
+        await interaction.response.send_message(
+            f"The trigger '{trigger_word}' isn't blacklisted anymore for this guild. <:yellow:1313941466862587997>",
+            ephemeral=True
+        )
+        logger.info(f"Trigger '{trigger_word}' isn't blacklisted anymore for guild {guild_id}.")
+
+    else:
+        cursor.execute("INSERT INTO triggers_blacklist (guild_id, trigger_id) VALUES (?, ?)", (guild_id, trigger_id[0]))
+        conn.commit()
+        await interaction.response.send_message(
+            f"The trigger '{trigger_word}' has been successfully blacklisted for this guild. <a:bigCry:1313925251108835348>",
+            ephemeral=True
+        )
+        logger.info(f"Trigger '{trigger_word}' has been blacklisted for guild {guild_id}.")
+
+    conn.close()
+
+
+@tree.command(name="show_blacklisted_triggers", description="Show the trigger blacklist for this server")
+async def show_blacklisted_triggers(interaction):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can blacklist triggers. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    triggers_list = blacklisted_triggers_list(guild_id=interaction.guild_id)
+
+    if not triggers_list:
+        await interaction.response.send_message(
+            "There are no blacklisted triggers for this server. Great to see y'all using my free smileys <:yellow:1313941466862587997>",
+        )
+        return
+    else:
+        message = "## List of blacklisted triggers\n"
+        message += "\n".join(f"> - {trigger}" for trigger in triggers_list)
+
+        await interaction.response.send_message(message)
 
 
 
@@ -368,18 +441,14 @@ async def remove_trigger(interaction, trigger: str):
         # check
         if not cursor.execute("SELECT * FROM triggers WHERE word = ?", (trigger,)).fetchone():
             await interaction.response.send_message(
-                f"Trigger '{trigger}' successfully removed from the database. <:yellow:1313941466862587997>",
-                ephemeral=True
-            )
+                f"Trigger '{trigger}' successfully removed from the database. <:yellow:1313941466862587997>"            )
             logger.info(f"Trigger '{trigger}' successfully removed from the database.")
         else:
             raise Exception("Deletion failed")
 
     except Exception as e:
         await interaction.response.send_message(
-            f"Error removing trigger '{trigger}' from the database: {e}. <:redAngry:1313876421227057193>",
-            ephemeral=True
-        )
+            f"Error removing trigger '{trigger}' from the database: {e}. <:redAngry:1313876421227057193>"        )
         logger.error(f"Error removing trigger '{trigger}' from the database: {e}")
 
     finally:

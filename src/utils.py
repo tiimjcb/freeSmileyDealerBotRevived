@@ -62,11 +62,13 @@ def process_message_for_smiley(message):
     cursor.execute("SELECT text_reactions_enabled FROM server_settings WHERE guild_id = ?", (guild_id,))
     text_reactions_enabled = cursor.fetchone()[0]
 
+    # import the blacklisted triggers
+    blacklisted_triggers = blacklisted_triggers_list(guild_id)
 
     # break the message into words -> we use the normalize_emoji() function to remove skin tone modifiers
     words = [normalize_emoji(word) for word in re.findall(r'\w+|[^\w\s]', message.content)]
     #logger.debug(f"Words: {words}")                # commented because it's useful for debugging. disabled on host.
-    words = merge_regional_indicators(words)
+    words = [word for word in merge_regional_indicators(words) if word.lower() not in blacklisted_triggers]
     #logger.debug(f"Processed words: {words}")      # idem
     smileys = []
 
@@ -169,8 +171,7 @@ def remove_guild_from_db(guild_id):
         conn.close()
 
 
-
-### Blacklist things
+### Blacklist channel things
 
 def is_blacklisted(guild_id, channel_id):
     """
@@ -215,6 +216,23 @@ def remove_channel_from_blacklist(guild_id, channel_id):
         conn.commit()
         logger.info(f"Channel {channel_id} from guild {guild_id} removed from the blacklist.")
     conn.close()
+
+
+
+### Blacklist triggers things
+
+def blacklisted_triggers_list(guild_id):
+    """
+    function that returns a list of blacklisted triggers for a certain guild
+    :param guild_id: the guild id
+    :return: a list of blacklisted triggers
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT t.word FROM triggers t, triggers_blacklist tb WHERE t.id = tb.trigger_id AND tb.guild_id = ?", (guild_id,))
+    result = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in result]
 
 
 ### Friday things
