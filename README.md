@@ -26,9 +26,7 @@ It'll work right out of the box. Make sure you give it the permissions to read a
 
 ## ⚠️ Bugs and Known Issues
 
-Due to the horrific process of importing all the smiley faces, ChatGPT was used to make it quicker. So, **bugs are expected**. 
-
-Big thanks to @Squelchyman for helping me simplify this process.
+There might be some bugs and issues with the bot, as it's my first Discord bot. Reach me on the support Discord server if you encounter any issues.
 
 ## ⚙️ Available features
 
@@ -37,6 +35,7 @@ The Free Smiley Dealer Bot Revived offers the following features:
 ### Emoji and Text Trigger Responses
 - **Regular Triggers**: When the bot detects a specific emoji or word in a message, it sends the matching smiley. 
 - **Special Triggers**: High-priority triggers that send custom images or GIFs as responses. These take precedence over regular triggers if both are present in the same message.
+
 
 - **Text Responses**: Sent as regular messages.
 - **Reaction Responses**: Added as reactions to the original message.
@@ -50,13 +49,15 @@ You can customize the bot’s behavior per server:
 - Toggle on/off **message** responses and **reactions** responses for triggers:
   - `/set_smiley_messages`
   - `/set_smiley_reactions`
-- **Blacklist** specific channels from triggering the bot (`/blacklist_channel`).
+- **Blacklist specific channels** from triggering the bot (`/blacklist_channel`).
+- **Blacklist specific triggers** from being used in the server (`/blacklist_trigger`).
 
 ### Other functions
 
 - **Help Command**: `/help` to get a list of available commands.
 - **Ping Command**: `/ping` to check the bot’s latency.
 - **Random smiley command**: `/random` to get a random smiley face.
+
 ## 💬 Contributing
 
 If you’d like to contribute, feel free to join the new Discord server : [https://discord.gg/Vg96qSNGf9](https://discord.gg/Vg96qSNGf9)
