@@ -515,17 +515,37 @@ async def on_ready():
 
     logger.info(f"Bot started and connected as {bot.user} in {len(guild_list)} server!")
     await update_activity_status()
+
+    # sync the global command tree
     try:
         await tree.sync()
         logger.info("Command tree synced globally!")
     except Exception as e:
         logger.critical(f"Error syncing command tree: {e}")
+
+    # sync the command tree in the admin guild
     try :
         guild = discord.Object(id=ADMINGUILD)
         await tree.sync(guild=guild)
         logger.info("Command tree synced in admin guild!")
     except Exception as e:
         logger.critical(f"Error syncing command tree in admin guild: {e}")
+
+    # sync the command tree in the support guild
+    try:
+        guild = discord.Object(id=SUPPORTGUILD)
+        await tree.sync(guild=guild)
+        logger.info("Command tree synced in support guild!")
+    except Exception as e:
+        logger.critical(f"Error syncing command tree in support guild: {e}")
+
+    # sync the command tree in the community guild
+    try:
+        guild = discord.Object(id=1231115041432928326)  # Specify the guild for syncing
+        await tree.sync(guild=guild)
+        logger.info("Command tree synced for the community server !")
+    except Exception as e:
+        logger.critical(f"Error syncing command tree for the community server : {e}")
 
 
 ## Guild events
