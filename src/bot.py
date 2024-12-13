@@ -127,16 +127,11 @@ async def friday_schedule(interaction):
         target_time = datetime.datetime.combine(now.date(), datetime.time(hour, minute))
         timestamp = int(target_time.timestamp())
 
-        day_adjustment = ""
-        if target_time.weekday() < 4:
-            day_adjustment = " (-1)"
-        elif target_time.weekday() > 4:
-            day_adjustment = " (+1)"
 
         if now > target_time:
-            message += f"> - ~~<t:{timestamp}:t>{day_adjustment}~~\n"
+            message += f"> - ~~<t:{timestamp}:t>~~\n"
         else:
-            message += f"> - <t:{timestamp}:t>{day_adjustment}\n"
+            message += f"> - <t:{timestamp}:t>\n"
 
     await interaction.response.send_message(message, ephemeral=True)
     logger.info(f"{interaction.user} used the /friday_schedule command to see the Friday schedule.")
