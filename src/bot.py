@@ -293,108 +293,97 @@ async def blacklist_channel(interaction, channel: discord.TextChannel):
 
 ##################### BOT ADMINISTRATIVE COMMANDS #####################
 
-@tree.command(name="add_regular_trigger", description="Add a regular trigger to the database")
+@tree.command(name="add_trigger", description="Add a trigger to the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
-@app_commands.describe(trigger="trigger word", response="the response", is_emoji="true if the trigger is a smiley, false otherwise")
-async def add_regular_trigger(interaction, trigger: str, response: str, is_emoji: bool):
+@app_commands.describe( trigger="The trigger word", response="The response for the trigger", is_emoji="True if the trigger is a smiley, false otherwise", is_special="True if this is a special trigger, false otherwise")
+async def add_trigger(interaction, trigger: str, response: str, is_emoji: bool, is_special: bool):
+    # administrator check
     if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
         await interaction.response.send_message(
-            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            "You do not have permission to use this command. Only the administrators of the bot can use this! <:redAngry:1313876421227057193>",
             ephemeral=True
         )
         return
 
+    # connect to the db
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO trigger_words (word, smiley, isEmoji) VALUES (?, ?, ?)", (trigger, response, is_emoji))
-    conn.commit()
 
-    if cursor.execute("SELECT * FROM trigger_words WHERE word = ?", (trigger,)).fetchone():
-        await interaction.response.send_message(f"Trigger '{trigger}' with the response '{response}' successfully added to the regular_triggers DB.")
-        logger.info(f"Trigger '{trigger}' with the response '{response}' successfully added to the regular_triggers DB.")
-    else:
-        await interaction.response.send_message(f"Error adding trigger '{trigger}' with the response '{response}' to the regular_triggers DB.")
-        logger.error(f"Error adding trigger '{trigger}' with the response '{response}' to the regular_triggers DB.")
+    try:
+        # insert
+        cursor.execute(
+            "INSERT INTO triggers (word, smiley, is_emoji, is_special) VALUES (?, ?, ?, ?)",
+            (trigger, response, is_emoji, is_special)
+        )
+        conn.commit()
 
-    conn.close()
+        # check
+        if cursor.execute("SELECT * FROM triggers WHERE word = ?", (trigger,)).fetchone():
+            await interaction.response.send_message(
+                f"Trigger '{trigger}' with the response '{response}' successfully added to the database. Special: {is_special}, Emoji: {is_emoji}"
+            )
+            logger.info(f"Trigger '{trigger}' with the response '{response}' successfully added to the database. Special: {is_special}, Emoji: {is_emoji}")
+        else:
+            raise Exception("Insertion failed")
+
+    except sqlite3.IntegrityError:  # trigger already exists
+        await interaction.response.send_message(
+            f"Error: Trigger '{trigger}' already exists in the database. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        logger.error(f"Error: Trigger '{trigger}' already exists in the database.")
+
+    except Exception as e:  # other errors
+        await interaction.response.send_message(
+            f"Error adding trigger '{trigger}' with the response '{response}' to the database: {e}. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        logger.error(f"Error adding trigger '{trigger}' with the response '{response}' to the database: {e}")
+
+    finally:
+        conn.close()
 
 
-
-@tree.command(name="add_special_trigger", description="Add a special trigger to the database")
+@tree.command(name="remove_trigger", description="Remove a trigger from the database")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
-@app_commands.describe(trigger="trigger word", response="the response", is_emoji="true if the trigger is a smiley, false otherwise")
-async def add_regular_trigger(interaction, trigger: str, response: str, is_emoji: bool):
+@app_commands.describe(trigger="The trigger word to remove")
+async def remove_trigger(interaction, trigger: str):
+    # admin check
     if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
         await interaction.response.send_message(
-            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            "You do not have permission to use this command. Only the administrators of the bot can use this! <:redAngry:1313876421227057193>",
             ephemeral=True
         )
         return
+
+    # db connection
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO special_triggers (word, smiley, isEmoji) VALUES (?, ?, ?)", (trigger, response, is_emoji))
-    conn.commit()
 
-    if cursor.execute("SELECT * FROM special_triggers WHERE word = ?", (trigger,)).fetchone():
-        await interaction.response.send_message(f"Trigger '{trigger}' with the response '{response}' successfully added to the special_triggers DB.")
-        logger.info(f"Trigger '{trigger}' with the response '{response}' successfully added to the special_triggers DB.")
-    else:
-        await interaction.response.send_message(f"Error adding trigger '{trigger}' with the response '{response}' to the special_triggers DB.")
-        logger.error(f"Error adding trigger '{trigger}' with the response '{response}' to the special_triggers DB.")
+    try:
+        # delete trigger
+        cursor.execute("DELETE FROM triggers WHERE word = ?", (trigger,))
+        conn.commit()
 
-    conn.close()
+        # check
+        if not cursor.execute("SELECT * FROM triggers WHERE word = ?", (trigger,)).fetchone():
+            await interaction.response.send_message(
+                f"Trigger '{trigger}' successfully removed from the database. <:yellow:1313941466862587997>",
+                ephemeral=True
+            )
+            logger.info(f"Trigger '{trigger}' successfully removed from the database.")
+        else:
+            raise Exception("Deletion failed")
 
-
-
-@tree.command(name="remove_regular_trigger", description="Remove a regular trigger from the database")
-@app_commands.guilds(discord.Object(id=ADMINGUILD))
-@app_commands.describe(trigger="trigger word to remove")
-async def remove_regular_trigger(interaction, trigger: str):
-    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
+    except Exception as e:
         await interaction.response.send_message(
-            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
+            f"Error removing trigger '{trigger}' from the database: {e}. <:redAngry:1313876421227057193>",
             ephemeral=True
         )
-        return
-    conn = sqlite3.connect('../databases/bot.db')
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM trigger_words WHERE word = ?", (trigger,))
-    conn.commit()
+        logger.error(f"Error removing trigger '{trigger}' from the database: {e}")
 
-    if not cursor.execute("SELECT * FROM trigger_words WHERE word = ?", (trigger,)).fetchone():
-        await interaction.response.send_message(f"Trigger '{trigger}' successfully removed from the regular_triggers DB.")
-        logger.info(f"Trigger '{trigger}' successfully removed from the regular_triggers DB.")
-    else:
-        await interaction.response.send_message(f"Error removing trigger '{trigger}' from the regular_triggers DB.")
-        logger.error(f"Error removing trigger '{trigger}' from the regular_triggers DB.")
-
-    conn.close()
-
-
-
-@tree.command(name="remove_special_trigger", description="Remove a special trigger from the database")
-@app_commands.guilds(discord.Object(id=ADMINGUILD))
-@app_commands.describe(trigger="trigger word to remove")
-async def remove_special_trigger(interaction, trigger: str):
-    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
-        await interaction.response.send_message(
-            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
-            ephemeral=True
-        )
-        return
-    conn = sqlite3.connect('../databases/bot.db')
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM special_triggers WHERE word = ?", (trigger,))
-    conn.commit()
-
-    if not cursor.execute("SELECT * FROM special_triggers WHERE word = ?", (trigger,)).fetchone():
-        await interaction.response.send_message(f"Trigger '{trigger}' successfully removed from the special_triggers DB.")
-        logger.info(f"Trigger '{trigger}' successfully removed from the special_triggers DB.")
-    else:
-        await interaction.response.send_message(f"Error removing trigger '{trigger}' from the special_triggers DB.")
-        logger.error(f"Error removing trigger '{trigger}' from the special_triggers DB.")
-
-    conn.close()
+    finally:
+        conn.close()
 
 
 @tree.command(name="logs", description="Get the n last lines of logs")

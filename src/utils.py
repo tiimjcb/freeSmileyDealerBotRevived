@@ -45,7 +45,6 @@ def merge_regional_indicators(words):
     return merged_words
 
 
-
 def process_message_for_smiley(message):
     """
     return the smileys of the emojis in a string that has an occurence in the database.
@@ -71,36 +70,39 @@ def process_message_for_smiley(message):
     #logger.debug(f"Processed words: {words}")      # idem
     smileys = []
 
-
-    # first : scan for special triggers
+    # first: scan for special triggers
     for word in words:
         word = word.lower()
         if text_reactions_enabled:
-            cursor.execute("SELECT * FROM special_triggers WHERE word = ?", (word,))
+            cursor.execute("SELECT * FROM triggers WHERE word = ? AND is_special = 1", (word,))
         else:
-            cursor.execute("SELECT * FROM special_triggers WHERE word = ? AND isEmoji = 1", (word,))
+            cursor.execute("SELECT * FROM triggers WHERE word = ? AND is_special = 1 AND is_emoji = 1", (word,))
         result = cursor.fetchone()
 
-        # smiley is in result[2]
         if result:
             logger.info(f"{user_name} in {guild_name} said the word '{word}' -> proper response sent (special trigger)")
-            logger.debug(f"Special trigger word found - ID: '{result[0]}', Trigger : '{result[1]}', Response: '{result[2]}', isEmoji : '{result[3]}'")
+            logger.debug(
+                f"Special trigger found - ID: '{result[0]}', Trigger: '{result[1]}', Response: '{result[2]}', Is Emoji: '{result[3]}'")
             smileys.append(result[2])
-            return smileys # we return at the first special trigger found because they have priority
+            conn.close()
+            return smileys
 
-    # second : scan for regular triggers
+
+    # second: scan for regular triggers
     for word in words:
         word = word.lower()
         if text_reactions_enabled:
-            cursor.execute("SELECT * FROM trigger_words WHERE word = ?", (word,))
+            cursor.execute("SELECT * FROM triggers WHERE word = ? AND is_special = 0", (word,))
         else:
-            cursor.execute("SELECT * FROM trigger_words WHERE word = ? AND isEmoji = 1", (word,))
+            cursor.execute("SELECT * FROM triggers WHERE word = ? AND is_special = 0 AND is_emoji = 1", (word,))
         result = cursor.fetchone()
-        # smiley is in result[2]
+
         if result:
             logger.info(f"{user_name} in {guild_name} said the word '{word}' -> Smiley sent")
-            logger.debug(f"Trigger word found - ID: '{result[0]}', Trigger : '{result[1]}', Response: '{result[2]}', isEmoji : '{result[3]}'")
+            logger.debug(
+                f"Regular trigger found - ID: '{result[0]}', Trigger: '{result[1]}', Response: '{result[2]}', Is Emoji: '{result[3]}'")
             smileys.append(result[2])
+
 
     conn.close()
     return smileys if smileys else None
@@ -116,7 +118,7 @@ def get_random_smiley(db_path='../databases/bot.db'):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT DISTINCT smiley FROM trigger_words")
+        cursor.execute("SELECT DISTINCT smiley FROM  triggers WHERE is_special = 0")
         smileys = cursor.fetchall()
 
         if not smileys:
@@ -132,6 +134,7 @@ def get_random_smiley(db_path='../databases/bot.db'):
 
     finally:
         conn.close()
+
 
 ## Guild things
 
@@ -164,6 +167,7 @@ def remove_guild_from_db(guild_id):
         conn.commit()
         logger.info(f"Guild {guild_id} removed from the server settings database.")
         conn.close()
+
 
 
 ### Blacklist things
