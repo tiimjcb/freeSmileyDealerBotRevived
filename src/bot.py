@@ -131,7 +131,7 @@ async def friday_schedule(interaction):
         else:
             message += f"> - {time_formatted}\n"
 
-    await interaction.response.send_message(message, emphemeral=True)
+    await interaction.response.send_message(message, ephemeral=True)
     logger.info(f"{interaction.user} used the /friday_schedule command to see the Friday schedule.")
 
 
@@ -541,7 +541,7 @@ async def on_ready():
 
     # sync the command tree in the community guild
     try:
-        guild = discord.Object(id=1231115041432928326)  # Specify the guild for syncing
+        guild = discord.Object(id=1231115041432928326)
         await tree.sync(guild=guild)
         logger.info("Command tree synced for the community server !")
     except Exception as e:
