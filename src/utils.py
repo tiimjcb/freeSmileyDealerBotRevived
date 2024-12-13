@@ -230,7 +230,6 @@ def generate_friday_schedule():
         )[0]
         minute = random.randint(0, 59)
         friday_hours.append((hour, minute))
-    friday_hours.append((23, 59))
 
 
 def is_friday_random_time():
