@@ -127,7 +127,6 @@ async def friday_schedule(interaction):
         target_time = datetime.datetime.combine(now.date(), datetime.time(hour, minute))
         timestamp = int(target_time.timestamp())
 
-        ## we need to determine if it rolls into the last or next day (time zones stuff yk)
         day_adjustment = ""
         if target_time.weekday() < 4:
             day_adjustment = " (-1)"
