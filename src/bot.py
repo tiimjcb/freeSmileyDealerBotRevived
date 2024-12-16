@@ -31,6 +31,32 @@ friday_messages = [
     "today is friday, the best day of the week <:happy:1313889573876662323>",
 ]
 
+friday_ask_messages = [
+    "is it friday?",
+    "is it fridey?",
+    "are we friday?",
+    "are we on friday?",
+    "is it friday yet?",
+    "is it friday today?",
+    "is today friday?",
+
+    "is it friday ?",
+    "is it fridey ?",
+    "are we friday ?",
+    "are we on friday ?",
+    "is it friday yet ?",
+    "is it friday today ?",
+    "is today friday ?",
+
+    "is it friday",
+    "is it fridey",
+    "are we friday",
+    "are we on friday",
+    "is it friday yet",
+    "is it friday today",
+    "is today friday",
+]
+
 
 # get the token
 load_dotenv("../var.env")
@@ -528,7 +554,6 @@ async def friday_message():
             if channel:
                 random_message = random.choice(friday_messages)
                 await channel.send(random_message)
-                await channel.send("<a:friday_1:1313928983578017843>")
             else:
                 logger.error(f"Channel with ID {channel_id} not found in guild {guild_id}. Can't send the Friday message.")
         else:
@@ -645,6 +670,19 @@ async def on_message(message):
 
     if is_blacklisted(message.guild.id, message.channel.id):
         return
+
+    if message.content.lower() in friday_ask_messages:
+        today = datetime.datetime.now().weekday()
+        if today == 4:
+            response = "yes, its fridey, YAHOOOO <a:friday_1:1313928983578017843>"
+        else:
+            days_until_friday = (4 - today) % 7
+            response = f"nooo... its not friday yet.. <a:bigCry:1313925251108835348> only {days_until_friday} day(s) left <:nerd:1313933240486203522>"
+
+        await message.channel.send(response)
+        logger.info(f"Responded to 'is it friday?' from {message.author} in {message.guild.name}")
+        return
+
 
     # get server settings
     guild_id = message.guild.id if message.guild else None
