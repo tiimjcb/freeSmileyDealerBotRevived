@@ -33,12 +33,9 @@ There might be some bugs and issues with the bot, as it's my first Discord bot. 
 The Free Smiley Dealer Bot Revived offers the following features:
 
 ### Emoji and Text Trigger Responses
-- **Regular Triggers**: When the bot detects a specific emoji or word in a message, it sends the matching smiley. 
-- **Special Triggers**: High-priority triggers that send custom images or GIFs as responses. These take precedence over regular triggers if both are present in the same message.
-
-
-- **Text Responses**: Sent as regular messages.
-- **Reaction Responses**: Added as reactions to the original message.
+- **Emojis triggers** : each time a supported emoji is detected (*more than 300*), it'll correct you with the corresponding free smiley.
+- **Word triggers** : some words will trigger a response such as a GIF.
+- **Is it friday?** : you can ask if it's friday, and the bot will answers depending on the current day!
 
 All the triggers are set on a database ! You can submit your suggestions on the Discord ! 😄
 
