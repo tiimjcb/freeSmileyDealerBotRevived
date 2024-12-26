@@ -31,32 +31,6 @@ friday_messages = [
     "today is friday, the best day of the week <:happy:1313889573876662323>",
 ]
 
-friday_ask_messages = [
-    "is it friday?",
-    "is it fridey?",
-    "are we friday?",
-    "are we on friday?",
-    "is it friday yet?",
-    "is it friday today?",
-    "is today friday?",
-
-    "is it friday ?",
-    "is it fridey ?",
-    "are we friday ?",
-    "are we on friday ?",
-    "is it friday yet ?",
-    "is it friday today ?",
-    "is today friday ?",
-
-    "is it friday",
-    "is it fridey",
-    "are we friday",
-    "are we on friday",
-    "is it friday yet",
-    "is it friday today",
-    "is today friday",
-]
-
 
 # get the token
 load_dotenv("../var.env")
@@ -107,6 +81,10 @@ async def help_command(interaction):
     await interaction.response.send_message(
         f"hey there \n"
         "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n"
+        "# Features <:yellow:1313941466862587997>\n"
+        "> - Send a paid smiley, get a free one smiley back \n"
+        "> - Ask if it's friday, and I'll answer you \n"
+        "\n"
         "# Commands <:yellow:1313941466862587997>\n"
         "> - `/ping` : a simple ping command \n"
         "> - `/help` : this help message \n"
@@ -116,6 +94,7 @@ async def help_command(interaction):
         "> - `/set_text_triggers [true/false]` : toggles on or off the text triggers (like 'hi')\n"
         "> - `/set_smiley_messages [true/false]` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
         "> - `/set_smiley_reactions [true/false]` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
+        "> - `/set_friday_messages [true/false]` : toggles on or off the reactions to friday related messages\n"
         "> - `/blacklist_channel [#channel]` : toggles on or off the blacklist for the channel you're using the command in\n"
         "> - `/blacklist_trigger [trigger]` : toggles on or off the blacklist for a specific trigger\n"
         "> - `/show_blacklisted_triggers` : shows the list of blacklisted triggers for this server\n",
@@ -290,6 +269,45 @@ async def set_smiley_reactions(interaction, enable: bool):
 
     conn.close()
 
+# friday messages settings - server_settings[4]
+@tree.command(name="set_friday_messages", description="Enable or disable reactions to friday related messages")
+@app_commands.describe(enable="True to enable friday messages, False to disable them")
+async def set_friday_messages(interaction, enable: bool):
+
+        # usual admin check
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message(
+                "You do not have permission to use this command. Only administrators can toggle friday messages. <:redAngry:1313876421227057193>",
+                ephemeral=True
+            )
+            return
+
+        guild_id = interaction.guild_id
+        conn = sqlite3.connect('../databases/bot.db')
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+        result = cursor.fetchone()
+
+        # if the guild is not in db
+        if not result:
+            cursor.execute("INSERT INTO server_settings (guild_id, friday_messages) VALUES (?, ?)", (guild_id, int(enable)))
+            conn.commit()
+            status_message = "enabled" if enable else "disabled"
+            await interaction.response.send_message(f"Friday messages {status_message}. <:yellow:1313941466862587997>")
+        else:
+            cursor.execute("UPDATE server_settings SET friday_messages = ? WHERE guild_id = ?", (int(enable), guild_id))
+            conn.commit()
+            status_message = "enabled" if enable else "disabled"
+            await interaction.response.send_message(f"Friday messages {status_message}. <:yellow:1313941466862587997>")
+
+        # log
+        cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+        result = cursor.fetchone()
+        logger.info(f"Friday messages settings modified for guild {guild_id}. Current status: {result[4]}")
+
+        conn.close()
+
 
 # blacklist channels -- different table in the db (channel_blacklist)
 @tree.command(name="blacklist_channel", description="Toggle blacklist status for a channel")
@@ -319,6 +337,7 @@ async def blacklist_channel(interaction, channel: discord.TextChannel):
         logger.info(f"Channel {channel_id} in guild {guild_id} blacklisted by {interaction.user}.")
 
 
+# blacklist triggers -- different table in the db (triggers_blacklist)
 @tree.command(name="blacklist_trigger", description="Set or remove blacklist for a trigger for this server")
 @app_commands.describe(trigger_word="The word or emoji to (un)blacklist for this server")
 async def blacklist_trigger(interaction, trigger_word: str):
@@ -369,7 +388,6 @@ async def blacklist_trigger(interaction, trigger_word: str):
 
     conn.close()
 
-
 @tree.command(name="show_blacklisted_triggers", description="Show the trigger blacklist for this server")
 async def show_blacklisted_triggers(interaction):
     if not interaction.user.guild_permissions.administrator:
@@ -391,6 +409,7 @@ async def show_blacklisted_triggers(interaction):
         message += "\n".join(f"> - {trigger}" for trigger in triggers_list)
 
         await interaction.response.send_message(message)
+
 
 
 
@@ -671,33 +690,26 @@ async def on_message(message):
     if is_blacklisted(message.guild.id, message.channel.id):
         return
 
-    if message.content.lower() in friday_ask_messages:
-        today = datetime.datetime.now().weekday()
-        if today == 4:
-            response = "yes, its fridey, YAHOOOO <a:friday_1:1313928983578017843>"
-        else:
-            days_until_friday = (4 - today) % 7
-            response = f"nooo... its not friday yet.. <a:bigCry:1313925251108835348> only {days_until_friday} day(s) left <:nerd:1313933240486203522>"
-
-        await message.channel.send(response)
-        logger.info(f"Responded to 'is it friday?' from {message.author} in {message.guild.name}")
-        return
-
-
     # get server settings
     guild_id = message.guild.id if message.guild else None
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT smiley_messages, smiley_reactions FROM server_settings WHERE guild_id = ?", (guild_id,))
+    cursor.execute("SELECT smiley_messages, smiley_reactions, friday_messages FROM server_settings WHERE guild_id = ?", (guild_id,))
     settings = cursor.fetchone()
     conn.close()
 
     # if there's no config we apply default settings -- should not happen, but just in case
     if not settings:
         smiley_messages_enabled = True
+        friday_messages_enabled = True
         smiley_reactions_enabled = False
     else:
-        smiley_messages_enabled, smiley_reactions_enabled = settings
+        smiley_messages_enabled, smiley_reactions_enabled, friday_messages_enabled = settings
+
+    if friday_messages_enabled:
+        if is_friday_ask_message(message.content):
+            await message.channel.send(process_friday_ask_message())
+            return
 
 
     smileys = process_message_for_smiley(message)
