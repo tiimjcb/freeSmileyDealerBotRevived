@@ -357,7 +357,7 @@ def process_friday_ask_message():
             "nope. just survive today. that's all we need to do. friday is peeking around the corner i can see it. <:eyes_1:1313927864734711858>",
             "no, it's thursday. but who cares? we’re practically at friday’s doorstep. <a:rolling_eyes:1313937460568522815>",
             "nah but it is tomorrow, so be ready <a:stuck_out_tongue_closed_eyes:1313938789944791051>",
-            "no <:fish:1313927965519773818>"
+            "no <:fish:1313927965519773818>",
             "sadly no. yk thursday feels like friday's younger brother trying so hard to be cool. <:joy:1313931968215384206>"],
 
         4: ["YES YES YES IT'S FRIDAY. FINALLY. WE MADE IT. LET'S GO!! <:happy:1313889573876662323> <:happy:1313889573876662323> <:happy:1313889573876662323>",
