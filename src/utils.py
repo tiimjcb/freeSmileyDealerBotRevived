@@ -1,5 +1,6 @@
 import datetime
 import difflib
+import pytz
 import random
 import sqlite3
 import re
@@ -310,11 +311,35 @@ def is_friday_ask_message(message):
     return False
 
 
-def process_friday_ask_message():
+def parse_timezone(timezone_str):
+    """
+    Parses a timezone string in the format 'UTC+X' or 'UTC-X' and returns a timezone object.
+    If it's a valid IANA timezone, returns the corresponding timezone object.
+    """
+    # Check if it's in the format 'UTC+X' or 'UTC-X'
+    utc_match = re.match(r'^UTC([+-])(\d{1,2})$', timezone_str)
+    if utc_match:
+        sign = 1 if utc_match.group(1) == '+' else -1
+        hours = int(utc_match.group(2)) * sign
+        return datetime.timezone(datetime.timedelta(hours=hours))
+    else:
+        # Assume it's an IANA timezone string
+        try:
+            return pytz.timezone(timezone_str)
+        except pytz.UnknownTimeZoneError:
+            raise ValueError(f"Invalid timezone format: {timezone_str}")
+
+
+def process_friday_ask_message(timezone):
     """
     returns a message depending on the current day.
-    :return: the message to send
+
+    :param timezone: the timezone of the server
+    :return: the message to send based on the current day.
     """
+    tz = parse_timezone(timezone)
+    now = datetime.datetime.now(tz)
+    current_day = now.weekday()
 
     # the big dictionary
     day_messages = {
@@ -369,7 +394,7 @@ def process_friday_ask_message():
             "yes, we did it. it's friday. i'm so proud of us. <a:friday_1:1313928983578017843>",
             "IT'S FRIDAY. CALL THE PRESIDENT. ALERT THE MEDIA. THIS IS HUGE. <:poggers:1313935895975563343>",
             "ye, and btw thanks for reminding me. it is, in fact, friday. <a:rolling_eyes:1313937460568522815>",
-            "YES YES YES YES YES YES YES YES <:poggers:1313935895975563343>"
+            "YES YES YES YES YES YES YES YES <:poggers:1313935895975563343>",
             "OHH YEAHH. FRIDAY IS HERE. THIS IS NOT A DRILL. <:red_1:1313936143506604053>",
             "fish fish fish fish <:fish:1313927965519773818>"
             "hmm yeah, friday. at last. i've waited 84 years for this moment. please let me enjoy it alone <:santa:1313937521239003208>",
@@ -404,9 +429,10 @@ def process_friday_ask_message():
             "sunday's here. at least it's not monday. yet. <:expressionless_1:1313927857172647986>"]
     }
 
-    current_day = datetime.datetime.now().weekday()
     messages = day_messages.get(current_day, [])
-    return random.choice(messages)
+    response = random.choice(messages)
+    logger.info(f"Friday message requested. Current day: {current_day}, Message: {response}")
+    return response
 
 
 

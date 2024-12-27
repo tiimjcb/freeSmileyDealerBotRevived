@@ -1,5 +1,6 @@
 import discord
 from discord import app_commands
+from discord.ext.commands import has_permissions
 from dotenv import load_dotenv
 from utils import *
 from discord.ext import tasks
@@ -98,6 +99,7 @@ async def help_command(interaction):
         "> - `/blacklist_channel [#channel]` : toggles on or off the blacklist for the channel you're using the command in\n"
         "> - `/blacklist_trigger [trigger]` : toggles on or off the blacklist for a specific trigger\n"
         "> - `/show_blacklisted_triggers` : shows the list of blacklisted triggers for this server\n",
+        "> - `/set_timezone [timezone]` : sets the timezone for the server\n",
         ephemeral=True
     )
     logger.info(f"{interaction.user} used the /help command")
@@ -411,6 +413,56 @@ async def show_blacklisted_triggers(interaction):
         await interaction.response.send_message(message)
 
 
+# timezone command
+
+timezones = [
+    "UTC-12", "UTC-11", "UTC-10", "UTC-9", "UTC-8", "UTC-7", "UTC-6", "UTC-5",
+    "UTC-4", "UTC-3", "UTC-2", "UTC-1", "UTC+0", "UTC+1", "UTC+2", "UTC+3",
+    "UTC+4", "UTC+5", "UTC+6", "UTC+7", "UTC+8", "UTC+9", "UTC+10", "UTC+11", "UTC+12"
+]
+
+class TimezoneAutocomplete(app_commands.Transformer):
+    async def transform(self, interaction: discord.Interaction, value: str) -> str:
+        if value in timezones:
+            return value
+        raise ValueError("Invalid timezone")
+
+    async def autocomplete(self, interaction: discord.Interaction, current: str):
+        return [
+            app_commands.Choice(name=tz, value=tz)
+            for tz in timezones if current.lower() in tz.lower()
+        ]
+
+
+@tree.command(name="set_timezone", description="Set the timezone for the server")
+@app_commands.describe(timezone="The timezone to set")
+async def set_timezone(interaction, timezone: TimezoneAutocomplete):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can set the timezone. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    guild_id = interaction.guild_id
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT timezone FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+
+    if not result:
+        cursor.execute("INSERT INTO server_settings (guild_id, timezone) VALUES (?, ?)", (guild_id, timezone))
+        conn.commit()
+        await interaction.response.send_message(f"Timezone set to {timezone}. <:yellow:1313941466862587997>")
+        logger.info(f"Timezone set to {timezone} for guild {guild_id}.")
+    else:
+        cursor.execute("UPDATE server_settings SET timezone = ? WHERE guild_id = ?", (timezone, guild_id))
+        conn.commit()
+        await interaction.response.send_message(f"Timezone updated to {timezone}. <:yellow:1313941466862587997>")
+        logger.info(f"Timezone updated to {timezone} for guild {guild_id}.")
+
+    conn.close()
 
 
 ##################### BOT ADMINISTRATIVE COMMANDS #####################
@@ -694,7 +746,7 @@ async def on_message(message):
     guild_id = message.guild.id if message.guild else None
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT smiley_messages, smiley_reactions, friday_messages FROM server_settings WHERE guild_id = ?", (guild_id,))
+    cursor.execute("SELECT smiley_messages, smiley_reactions, friday_messages, timezone FROM server_settings WHERE guild_id = ?", (guild_id,))
     settings = cursor.fetchone()
     conn.close()
 
@@ -703,12 +755,13 @@ async def on_message(message):
         smiley_messages_enabled = True
         friday_messages_enabled = True
         smiley_reactions_enabled = False
+        timezone = "UTC+0"
     else:
-        smiley_messages_enabled, smiley_reactions_enabled, friday_messages_enabled = settings
+        smiley_messages_enabled, smiley_reactions_enabled, friday_messages_enabled, timezone = settings
 
     if friday_messages_enabled:
         if is_friday_ask_message(message.content):
-            await message.channel.send(process_friday_ask_message())
+            await message.channel.send(process_friday_ask_message(timezone))
             return
 
 
