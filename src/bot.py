@@ -79,7 +79,8 @@ async def ping(interaction):
 
 @tree.command(name="help", description="A simple help command")
 async def help_command(interaction):
-    await interaction.response.send_message(
+    is_admin = interaction.user.guild_permissions.administrator
+    message = (
         f"hey there \n"
         "i'm a bot that reacts to specific words and paid smileys with free smileys. <:lore:1314281452204068966> \n"
         "# Features <:yellow:1313941466862587997>\n"
@@ -90,19 +91,26 @@ async def help_command(interaction):
         "> - `/ping` : a simple ping command \n"
         "> - `/help` : this help message \n"
         "> - `/random` : get a random smiley \n"
-        "\n"
-        "# Admin commands <:nerd:1313933240486203522>\n"
-        "> - `/set_text_triggers [true/false]` : toggles on or off the text triggers (like 'hi')\n"
-        "> - `/set_smiley_messages [true/false]` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
-        "> - `/set_smiley_reactions [true/false]` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
-        "> - `/set_friday_messages [true/false]` : toggles on or off the reactions to friday related messages\n"
-        "> - `/blacklist_channel [#channel]` : toggles on or off the blacklist for the channel you're using the command in\n"
-        "> - `/blacklist_trigger [trigger]` : toggles on or off the blacklist for a specific trigger\n"
-        "> - `/show_blacklisted_triggers` : shows the list of blacklisted triggers for this server\n",
-        "> - `/set_timezone [timezone]` : sets the timezone for the server\n",
-        ephemeral=True
     )
+
+    if is_admin:
+        message += (
+            "\n"
+            "# Admin commands <:nerd:1313933240486203522>\n"
+            "> - `/set_text_triggers [true/false]` : toggles on or off the text triggers (like 'hi')\n"
+            "> - `/set_smiley_messages [true/false]` : toggles on or off the smiley messages (bot sends emojis as messages)\n"
+            "> - `/set_smiley_reactions [true/false]` : toggles on or off the smiley reactions (bot reacts to messages with emojis)\n"
+            "> - `/set_friday_messages [true/false]` : toggles on or off the reactions to friday related messages\n"
+            "> - `/blacklist_channel [#channel]` : toggles on or off the blacklist for the channel you're using the command in\n"
+            "> - `/blacklist_trigger [trigger]` : toggles on or off the blacklist for a specific trigger\n"
+            "> - `/show_blacklisted_triggers` : shows the list of blacklisted triggers for this server\n"
+            "> - `/set_timezone [timezone]` : sets the timezone for the server\n"
+            "> - `/pause_bot [true/false]` : pauses or unpauses the bot in the server\n"
+        )
+
+    await interaction.response.send_message(message, ephemeral=True)
     logger.info(f"{interaction.user} used the /help command")
+
 
 @tree.command(name="random", description="Get a random smiley")
 async def random_smiley(interaction):
@@ -413,8 +421,7 @@ async def show_blacklisted_triggers(interaction):
         await interaction.response.send_message(message)
 
 
-# timezone command
-
+# timezone command - server_settings[5]
 timezones = [
     "UTC-12", "UTC-11", "UTC-10", "UTC-9", "UTC-8", "UTC-7", "UTC-6", "UTC-5",
     "UTC-4", "UTC-3", "UTC-2", "UTC-1", "UTC+0", "UTC+1", "UTC+2", "UTC+3",
@@ -432,7 +439,6 @@ class TimezoneAutocomplete(app_commands.Transformer):
             app_commands.Choice(name=tz, value=tz)
             for tz in timezones if current.lower() in tz.lower()
         ]
-
 
 @tree.command(name="set_timezone", description="Set the timezone for the server")
 @app_commands.describe(timezone="The timezone to set")
@@ -461,6 +467,41 @@ async def set_timezone(interaction, timezone: TimezoneAutocomplete):
         conn.commit()
         await interaction.response.send_message(f"Timezone updated to {timezone}. <:yellow:1313941466862587997>")
         logger.info(f"Timezone updated to {timezone} for guild {guild_id}.")
+
+    conn.close()
+
+# pause command - server_settings[6]
+@tree.command(name="pause_bot", description="Pause the bot in the server")
+@app_commands.describe(enable="True to pause the bot, False to unpause it")
+async def pause(interaction, enable: bool):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can pause the bot. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    guild_id = interaction.guild_id
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT is_paused FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+
+    if not result:
+        cursor.execute("INSERT INTO server_settings (guild_id, is_paused) VALUES (?, ?)", (guild_id, int(enable)))
+        conn.commit()
+        status_message = "paused" if enable else "unpaused"
+        await interaction.response.send_message(f"The bot has been {status_message}. <:yellow:1313941466862587997>")
+    else:
+        cursor.execute("UPDATE server_settings SET is_paused = ? WHERE guild_id = ?", (int(enable), guild_id))
+        conn.commit()
+        status_message = "paused" if enable else "unpaused"
+        await interaction.response.send_message(f"The bot has been {status_message}. <:yellow:1313941466862587997>")
+
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+    logger.info(f"Bot paused status modified for guild {guild_id}. Current status: {result[6]}")
 
     conn.close()
 
@@ -610,7 +651,6 @@ async def update_bot(interaction):
         )
 
 
-
 ##################### TIME BASED EVENTS #####################
 
 @tasks.loop(minutes=1)
@@ -637,7 +677,6 @@ async def update_activity_status():
         activity = discord.Activity(type=discord.ActivityType.competing,
                                     name=f" {len(bot.guilds)} servers to use free smileys")
         await bot.change_presence(status=discord.Status.online, activity=activity)
-
 
 
 
@@ -714,11 +753,28 @@ async def on_guild_join(guild):
     logger.info("============================================================")
     logger.info(f"Bot has joined a new guild: {guild.name} (ID: {guild.id})")
     logger.info("============================================================")
+
     admin_guild = bot.get_guild(int(ADMINGUILD))
     channel = admin_guild.get_channel(int(ADMINGUILD_YAP_CHANNEL))
     await channel.send(f"i joined a new guild: '{guild.name}' <:yellow:1313941466862587997>")
+
     add_guild_to_db(guild.id)
     await update_activity_status()
+
+    try:
+        owner = guild.owner
+        if owner:
+            await owner.send(
+                f"## hey {owner.name}, thanks for adding me to your server '{guild.name}' <:yellow:1313941466862587997>\n"
+                "you should check out the `/help` command to see what i can do for you\n"
+                "and also, set the **timezone** of your server with the `/set_timezone` command (*essential if you want the friday feature to work properly*)\n\n"
+                "finally, join the support server if you have any questions or need help: https://discord.gg/Vg96qSNGf9 <:yellow:1313941466862587997>"
+            )
+            logger.info(f"Welcome message sent to the owner {owner.name} (ID: {owner.id}) of guild {guild.name}.")
+        else:
+            logger.warning(f"Could not identify the owner of the guild {guild.name}.")
+    except Exception as e:
+        logger.error(f"Error sending welcome message to the owner of the guild {guild.name}: {e}")
 
 @bot.event
 async def on_guild_remove(guild):
@@ -746,7 +802,7 @@ async def on_message(message):
     guild_id = message.guild.id if message.guild else None
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT smiley_messages, smiley_reactions, friday_messages, timezone FROM server_settings WHERE guild_id = ?", (guild_id,))
+    cursor.execute("SELECT smiley_messages, smiley_reactions, friday_messages, timezone, is_paused FROM server_settings WHERE guild_id = ?", (guild_id,))
     settings = cursor.fetchone()
     conn.close()
 
@@ -756,8 +812,13 @@ async def on_message(message):
         friday_messages_enabled = True
         smiley_reactions_enabled = False
         timezone = "UTC+0"
+        is_paused = False
     else:
-        smiley_messages_enabled, smiley_reactions_enabled, friday_messages_enabled, timezone = settings
+        smiley_messages_enabled, smiley_reactions_enabled, friday_messages_enabled, timezone, is_paused = settings
+
+    # if the bot is paused, we don't do anything
+    if is_paused:
+        return
 
     if friday_messages_enabled:
         if is_friday_ask_message(message.content):

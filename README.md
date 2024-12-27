@@ -48,6 +48,8 @@ You can customize the bot’s behavior per server:
   - `/set_smiley_reactions`
 - **Blacklist specific channels** from triggering the bot (`/blacklist_channel`).
 - **Blacklist specific triggers** from being used in the server (`/blacklist_trigger`).
+- **Set the timezone** of the server - used for the Friday ask feature (`/set_timezone`).
+- **Temporarily pause** the bot in the server (`/pause_bot`).
 
 ### Other functions
 
