@@ -1,11 +1,14 @@
 import datetime
-import difflib
 import pytz
 import random
 import sqlite3
 import re
 import os
 from logger import logger
+import discord
+from discord.ui import View, Button
+
+
 
 friday_hours = []
 
@@ -459,3 +462,48 @@ def get_last_log_lines(n: int, log_dir: str):
     except Exception as e:
         logger.error("An error occurred while reading the logs.")
         return f"An error occurred while reading the logs: {e}"
+
+
+## Discord PaginatedView things
+
+class PaginatedView(View):
+    """
+    the class that manages and represents a paginated view
+    """
+    def __init__(self, pages, user):
+        super().__init__()
+        self.pages = pages
+        self.current_page = 0
+        self.user = user
+        self.update_buttons()
+
+    def update_buttons(self):
+        """ enables or disables the 'Previous' and 'Next' buttons based on the current page. """
+        for child in self.children:
+            if isinstance(child, Button):
+                if child.label == "Previous":
+                    child.disabled = self.current_page == 0
+                elif child.label == "Next":
+                    child.disabled = self.current_page == len(self.pages) - 1
+
+    @discord.ui.button(label="⬅  Previous", style=discord.ButtonStyle.blurple)
+    async def previous_button(self, interaction, button: Button):
+        """ handler for the 'Previous' button. """
+        if interaction.user.id != self.user:
+            await interaction.response.send_message("You can't interact with this view.", ephemeral=True)
+            return
+
+        self.current_page -= 1
+        self.update_buttons()
+        await interaction.response.edit_message(content=self.pages[self.current_page], view=self)
+
+    @discord.ui.button(label="Next  ➡", style=discord.ButtonStyle.blurple)
+    async def next_button(self, interaction, button: Button):
+        """ handler for the 'Next' button. """
+        if interaction.user.id != self.user:
+            await interaction.response.send_message("You can't interact with this view.", ephemeral=True)
+            return
+
+        self.current_page += 1
+        self.update_buttons()
+        await interaction.response.edit_message(content=self.pages[self.current_page], view=self)

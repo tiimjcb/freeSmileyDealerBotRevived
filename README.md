@@ -56,6 +56,7 @@ You can customize the bot’s behavior per server:
 - **Help Command**: `/help` to get a list of available commands.
 - **Ping Command**: `/ping` to check the bot’s latency.
 - **Random smiley command**: `/random` to get a random smiley face.
+- **Show all triggers**: `/show_triggers` to get a list of all the triggers in the server.
 
 ## 💬 Contributing
 

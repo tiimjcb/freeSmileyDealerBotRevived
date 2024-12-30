@@ -1,6 +1,4 @@
-import discord
 from discord import app_commands
-from discord.ext.commands import has_permissions
 from dotenv import load_dotenv
 from utils import *
 from discord.ext import tasks
@@ -91,6 +89,7 @@ async def help_command(interaction):
         "> - `/ping` : a simple ping command \n"
         "> - `/help` : this help message \n"
         "> - `/random` : get a random smiley \n"
+        "> - `/show_triggers` : show all of the different triggers \n"
     )
 
     if is_admin:
@@ -124,6 +123,33 @@ async def random_smiley(interaction):
         logger.info(f"{interaction.user} used the /random_smiley command and got the smiley {smiley}")
     else:
         raise Exception("Error with the get_random_smiley function.")
+
+@tree.command(name="show_triggers", description="Show all of the different triggers")
+async def show_triggers(interaction):
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT DISTINCT word
+        FROM triggers
+        ORDER BY is_emoji ASC, 
+                 CASE WHEN is_emoji = 0 THEN word END ASC,
+                 CASE WHEN is_emoji = 1 THEN word END DESC
+    """)
+    triggers = [row[0] for row in cursor.fetchall()]
+    conn.close()
+
+    if not triggers:
+        await interaction.response.send_message("No triggers found in the database.", ephemeral=True)
+        return
+
+    pages = [triggers[i:i + 20] for i in range(0, len(triggers), 20)]
+
+    formatted_pages = [f"### page {index + 1}/{len(pages)} <:yellow:1313941466862587997> \n" + "\n".join(f"> - {trigger}" for trigger in page)
+                      for index, page in enumerate(pages)]
+
+    view = PaginatedView(formatted_pages, interaction.user.id)
+    await interaction.response.send_message(content=formatted_pages[0], view=view, ephemeral=True)
 
 
 ##################### GET FRIDAY SCHEDULE COMMAND #########################
@@ -505,7 +531,6 @@ async def pause(interaction, enable: bool):
 
     conn.close()
 
-
 ##################### BOT ADMINISTRATIVE COMMANDS #####################
 
 @tree.command(name="add_trigger", description="Add a trigger to the database")
@@ -842,6 +867,7 @@ async def on_message(message):
                     await message.add_reaction(emoji_object)
                 except Exception:
                     logger.error(f"Failed to add reaction {smiley} to message -> might be because it's a special trigger. if it is, all good.")
+
 
 
 bot.run(TOKEN)
