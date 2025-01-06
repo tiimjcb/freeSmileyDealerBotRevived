@@ -429,7 +429,8 @@ def process_friday_ask_message(timezone):
             "it's sunday. enjoy it before monday ruins everything. <:smoking:1313938585178734723>",
             "sunday. the weekend is almost over. thanks for reminding me. <:middle_finger:1313933112635555911>",
             "nope, it's sunday. friday's long gone. deal with it. <:head_bandage_1:1313930267639156816>",
-            "sunday's here. at least it's not monday. yet. <:expressionless_1:1313927857172647986>"]
+            "sunday's here. at least it's not monday. yet. <:expressionless_1:1313927857172647986>",
+            "no, its sunday..... have you done the things you need to do for monday? <:nerd:1313933240486203522>"]
     }
 
     messages = day_messages.get(current_day, [])
