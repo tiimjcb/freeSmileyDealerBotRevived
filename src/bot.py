@@ -87,6 +87,7 @@ async def help_command(interaction):
         "> - Ask if it's friday, and I'll answer you \n"
         "\n"
         "# Commands <:yellow:1313941466862587997>\n"
+        "> - `/ignore_me [true/false]` : add or remove yourself from the bot's blacklist -- the bot will ignore you\n"
         "> - `/ping` : a simple ping command \n"
         "> - `/help` : this help message \n"
         "> - `/random` : get a random smiley \n"
@@ -151,6 +152,31 @@ async def show_triggers(interaction):
 
     view = PaginatedView(formatted_pages, interaction.user.id)
     await interaction.response.send_message(content=formatted_pages[0], view=view, ephemeral=True)
+
+
+@tree.command(name="ignore_me", description="Add or remove yourself from the bot's blacklist -- the bot will ignore you tho")
+@app_commands.describe(enable="True to add yourself to the blacklist, False to remove yourself")
+async def ignore_me(interaction, enable: bool):
+    user_id = interaction.user.id
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    try:
+        if enable:
+            cursor.execute("INSERT OR IGNORE INTO users_blacklist (user_id) VALUES (?)", (user_id,))
+            conn.commit()
+            await interaction.response.send_message("You have been added to the bot's blacklist. The bot will now ignore you.", ephemeral=True)
+            logger.info(f"User {user_id} was added to the blacklist.")
+        else:
+            cursor.execute("DELETE FROM users_blacklist WHERE user_id = ?", (user_id,))
+            conn.commit()
+            await interaction.response.send_message("You have been removed from the bot's blacklist. The bot will no longer ignore you.", ephemeral=True)
+            logger.info(f"User {user_id} was removed from the blacklist.")
+    except Exception as e:
+        logger.error(f"An error occurred while processing /ignore_me for user {user_id}: {e}")
+        await interaction.response.send_message("There was an error processing your request. Please try again later.", ephemeral=True)
+    finally:
+        conn.close()
 
 
 ##################### GET FRIDAY SCHEDULE COMMAND #########################
@@ -362,7 +388,7 @@ async def blacklist_channel(interaction, channel: discord.TextChannel):
     guild_id = interaction.guild_id
     channel_id = channel.id
 
-    result = is_blacklisted(guild_id, channel_id)
+    result = is_channel_blacklisted(guild_id, channel_id)
 
     if result:
         remove_channel_from_blacklist(guild_id, channel_id)
@@ -806,7 +832,10 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    if is_blacklisted(message.guild.id, message.channel.id):
+    if is_channel_blacklisted(message.guild.id, message.channel.id):
+        return
+
+    if is_user_blacklisted(message.author.id):
         return
 
     # get server settings

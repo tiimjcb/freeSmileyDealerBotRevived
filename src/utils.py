@@ -178,7 +178,7 @@ def remove_guild_from_db(guild_id):
 
 ### Blacklist channel things
 
-def is_blacklisted(guild_id, channel_id):
+def is_channel_blacklisted(guild_id, channel_id):
     """
     function that checks if a channel in a certain guild is blacklisted
     :param guild_id: the guild id
@@ -192,6 +192,20 @@ def is_blacklisted(guild_id, channel_id):
     conn.close()
     return result is not None
 
+def is_user_blacklisted(user_id):
+    """
+    function that checks if a user is blacklisted
+    :param user_id: the user id
+    :return: boolean, true if blacklisted, false if not
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users_blacklist WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result is not None
+
+
 def add_channel_to_blacklist(guild_id, channel_id):
     """
     function that adds a channel to the blacklist
@@ -200,7 +214,7 @@ def add_channel_to_blacklist(guild_id, channel_id):
     """
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    result = is_blacklisted(guild_id, channel_id)
+    result = is_channel_blacklisted(guild_id, channel_id)
     if not result:
         cursor.execute("INSERT INTO channel_blacklist (guild_id, channel_id) VALUES (?, ?)", (guild_id, channel_id))
         conn.commit()
@@ -215,7 +229,7 @@ def remove_channel_from_blacklist(guild_id, channel_id):
     """
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    result = is_blacklisted(guild_id, channel_id)
+    result = is_channel_blacklisted(guild_id, channel_id)
     if result:
         cursor.execute("DELETE FROM channel_blacklist WHERE guild_id = ? AND channel_id = ?", (guild_id, channel_id))
         conn.commit()
