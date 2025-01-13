@@ -18,9 +18,9 @@ FSD Revived collects **minimal data** strictly for operational and debugging pur
    - Purpose: To display in logs who triggered a bot action (e.g., detected emoji). This helps identify issues or abuse.
    - Storage: Only stored temporarily in runtime logs.
 
-3. **Detected Emojis**  
-   - Purpose: To log what emojis the bot detected and processed.
-   - Storage: Only stored temporarily in runtime logs.
+3. **Messages**  
+   - Purpose: To analyse the message, so the bot can identify the different triggers (*such as emojis*) or the "Friday messages" (*is it friday?*).
+   - Storage: The entire message is only stored temporarily while the bot processes it (it's a matter of nano-seconds). Only the trigger that was present in the message is stored for logging purposes (*in "this message is a test 😄", only "😄" is stored in the logs*).
 
 ---
 
@@ -34,7 +34,7 @@ The collected data is **not shared**, **sold**, or **used for marketing purposes
 
 ## Data Retention
 
-- All logs are temporary and only exist while the bot is running.  
+- All logs are temporary and only exist while the bot is running. Everyday, a log file is created on the host server. A log file lasts **10 days** before deletion.
 - No data is stored persistently in any database, file, or external service.
 
 ---
@@ -55,13 +55,13 @@ FSD Revived does not share any data with third parties. However, as the bot oper
 
 ## Contact
 
-If you have questions about this Privacy Policy or the bot's compliance with GDPR, please contact the developers via the [GitHub repository](https://github.com/your-repo).
+If you have questions about this Privacy Policy or the bot's compliance with GDPR, please contact the developers via the [GitHub repository](https://github.com/tiimjcb/freeSmileyDealerBotRevived).
 
 ---
 
 ## Changes to This Policy
 
-This Privacy Policy may be updated periodically to reflect changes in bot functionality or legal requirements. Any significant changes will be documented in the [GitHub repository](https://github.com/your-repo).
+This Privacy Policy may be updated periodically to reflect changes in bot functionality or legal requirements. Any significant changes will be documented in the [GitHub repository](https://github.com/tiimjcb/freeSmileyDealerBotRevived).
 
 ---
 
