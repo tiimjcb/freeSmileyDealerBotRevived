@@ -61,8 +61,8 @@ if not UPDATE_PATH:
 
 ##################### DISCORD BOT CONFIGURATION #####################
 
-intents = discord.Intents.all()
-intents.presences = False
+intents = discord.Intents.default()
+intents.message_content = True
 bot = discord.Client(intents=intents)
 tree = app_commands.CommandTree(bot)
 
@@ -786,21 +786,6 @@ async def on_guild_join(guild):
 
     add_guild_to_db(guild.id)
     await update_activity_status()
-
-    try:
-        owner = guild.owner
-        if owner:
-            await owner.send(
-                f"## hey {owner.name}, thanks for adding me to your server '{guild.name}' <:yellow:1313941466862587997>\n"
-                "you should check out the `/help` command to see what i can do for you\n"
-                "and also, set the **timezone** of your server with the `/set_timezone` command (*essential if you want the friday feature to work properly*)\n\n"
-                "finally, join the support server if you have any questions or need help: https://discord.gg/Vg96qSNGf9 <:yellow:1313941466862587997>"
-            )
-            logger.info(f"Welcome message sent to the owner {owner.name} (ID: {owner.id}) of guild {guild.name}.")
-        else:
-            logger.warning(f"Could not identify the owner of the guild {guild.name}.")
-    except Exception as e:
-        logger.error(f"Error sending welcome message to the owner of the guild {guild.name}: {e}")
 
 @bot.event
 async def on_guild_remove(guild):
