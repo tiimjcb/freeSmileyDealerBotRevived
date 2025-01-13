@@ -62,6 +62,7 @@ if not UPDATE_PATH:
 ##################### DISCORD BOT CONFIGURATION #####################
 
 intents = discord.Intents.all()
+intents.presences = False
 bot = discord.Client(intents=intents)
 tree = app_commands.CommandTree(bot)
 
