@@ -35,7 +35,10 @@ The Free Smiley Dealer Bot Revived offers the following features:
 ### Emoji and Text Trigger Responses
 - **Emojis triggers** : each time a supported emoji is detected (*more than 300*), it'll correct you with the corresponding free smiley.
 - **Word triggers** : some words will trigger a response such as a GIF.
+ 
 - **Is it friday?** : you can ask if it's friday, and the bot will answers depending on the current day!
+  ![isitfriday](https://github.com/user-attachments/assets/bc50ca9e-c118-4180-872b-4b85c9800bbb)
+ 
 
 All the triggers are set on a database ! You can submit your suggestions on the Discord ! 😄
 
