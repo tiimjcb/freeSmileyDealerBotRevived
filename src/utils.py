@@ -200,7 +200,7 @@ def is_user_blacklisted(user_id):
     """
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users_blacklist WHERE user_id = ?", (user_id,))
+    cursor.execute("SELECT * FROM users_settings WHERE user_id = ? and is_blacklisted = 1", (user_id,))
     result = cursor.fetchone()
     conn.close()
     return result is not None

@@ -163,18 +163,25 @@ async def ignore_me(interaction, enable: bool):
 
     try:
         if enable:
-            cursor.execute("INSERT OR IGNORE INTO users_blacklist (user_id) VALUES (?)", (user_id,))
+            cursor.execute(
+                "INSERT INTO users_settings (user_id, is_blacklisted) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET is_blacklisted = ?",
+                (user_id, True, True))
             conn.commit()
-            await interaction.response.send_message("You have been added to the bot's blacklist. The bot will now ignore you.", ephemeral=True)
+            await interaction.response.send_message(
+                "You have been added to the bot's blacklist. The bot will now ignore you.", ephemeral=True)
             logger.info(f"User {user_id} was added to the blacklist.")
         else:
-            cursor.execute("DELETE FROM users_blacklist WHERE user_id = ?", (user_id,))
+            cursor.execute("UPDATE users_settings SET is_blacklisted = ? WHERE user_id = ?", (False, user_id))
             conn.commit()
-            await interaction.response.send_message("You have been removed from the bot's blacklist. The bot will no longer ignore you.", ephemeral=True)
+            await interaction.response.send_message(
+                "You have been removed from the bot's blacklist. The bot will no longer ignore you.", ephemeral=True)
             logger.info(f"User {user_id} was removed from the blacklist.")
+
     except Exception as e:
         logger.error(f"An error occurred while processing /ignore_me for user {user_id}: {e}")
-        await interaction.response.send_message("There was an error processing your request. Please try again later.", ephemeral=True)
+        await interaction.response.send_message("There was an error processing your request. Please try again later.",
+                                                ephemeral=True)
+
     finally:
         conn.close()
 
