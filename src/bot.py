@@ -92,6 +92,7 @@ async def help_command(interaction):
         "> - `/help` : this help message \n"
         "> - `/random` : get a random smiley \n"
         "> - `/show_triggers` : show all of the different triggers \n"
+        "> - `/experience` : see your experience points or someone else's \n"
     )
 
     if is_admin:
@@ -184,6 +185,47 @@ async def ignore_me(interaction, enable: bool):
 
     finally:
         conn.close()
+
+
+
+@tree.command(name="experience", description="See your experience points or someone else's")
+@app_commands.describe(user="The user you want to see the experience points of -- leave empty to see your own")
+async def experience(interaction, user: discord.Member = None):
+
+    user_id = user.id if user else interaction.user.id
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT exp FROM users_settings WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+
+    # if the user is the one who used the command, but they don't have any experience data yet
+    if not result and not user:
+        cursor.execute("INSERT INTO users_settings (user_id, exp) VALUES (?, ?)", (user_id, 0))
+        conn.commit()
+        response = (
+            "you have **0** experience points <:yellow:1313941466862587997>\n"
+            "-# gain experience by feeding me with paid smileys"
+        )
+
+        # if the user is not the one who used the command, but they don't have any experience data yet
+    elif not result:
+        response = (
+            f"{user.mention} has **0** experience points, he's not even registered in the database.. looser... <:yellow:1313941466862587997>\n"
+            "-# gain experience by feeding me with paid smileys"
+        )
+
+        # if the user has experience data
+    else:
+        response = (
+            f"{f'{user.mention} has' if user else 'you have'} **{result[0]}** experience points <:yellow:1313941466862587997>\n"
+            "-# gain experience by feeding me with paid smileys"
+        )
+
+    conn.close()
+    await interaction.response.send_message(response)
+
+
 
 
 ##################### GET FRIDAY SCHEDULE COMMAND #########################
@@ -730,12 +772,14 @@ async def friday_message():
             logger.error(f"Guild with ID {guild_id} not found. Can't send the Friday message.")
 
 
+
 ##################### DISCORD BOT FUNCTIONS #####################
 
 async def update_activity_status():
         activity = discord.Activity(type=discord.ActivityType.competing,
                                     name=f" {len(bot.guilds)} servers to use free smileys")
         await bot.change_presence(status=discord.Status.online, activity=activity)
+
 
 
 
@@ -863,6 +907,7 @@ async def on_message(message):
     else:
         smiley_messages_enabled, smiley_reactions_enabled, friday_messages_enabled, timezone, is_paused = settings
 
+
     # if the bot is paused, we don't do anything
     if is_paused:
         return
@@ -889,7 +934,7 @@ async def on_message(message):
                     await message.add_reaction(emoji_object)
                 except Exception:
                     logger.error(f"Failed to add reaction {smiley} to message -> might be because it's a special trigger. if it is, all good.")
-
+        add_experience(smileys, message.author.id, message.created_at)
 
 
 bot.run(TOKEN)

@@ -8,7 +8,7 @@ from logger import logger
 import discord
 from discord.ui import View, Button
 
-
+from src.bot import inform_user_exp_system
 
 friday_hours = []
 
@@ -141,6 +141,47 @@ def get_random_smiley(db_path='../databases/bot.db'):
 
     finally:
         conn.close()
+
+## Experience things
+
+def add_experience(smileys, user_id, timestamp):
+    """
+    function that adds experience to a user in the database.
+    :param smileys: the smileys to add
+    :param user_id: the user id
+    :param timestamp: the timestamp of the message
+    :param channel_id: the channel id
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users_settings WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+
+    # adding the user if not in db
+    if not user:
+        cursor.execute("INSERT INTO users_settings (user_id) VALUES (?)", (user_id,))
+        conn.commit()
+        logger.info(f"User {user_id} added to the users settings database.")
+
+
+    # calculating the experience based on the number of smileys detected (1 smiley = 1 exp, max 5 exp per message)
+    exp_calc = len(smileys) if len(smileys) <= 5 else 5
+
+    # comparing the timestamp of the message with the last message timestamp to avoid spam
+    cursor.execute("SELECT last_detected_message FROM users_settings WHERE user_id = ?", (user_id,))
+    last_message = cursor.fetchone()
+    last_message_timestamp = last_message[0] if last_message else None
+
+    if last_message_timestamp:
+        last_message_timestamp = datetime.datetime.strptime(last_message_timestamp, "%Y-%m-%d %H:%M:%S.%f%z")
+        time_difference = timestamp - last_message_timestamp
+        if time_difference.total_seconds() < 20:
+            exp_calc = 0
+
+    # adding the experience and updating the timestamp to the user
+    cursor.execute("UPDATE users_settings SET exp = exp + ?, last_detected_message = ? WHERE user_id = ?", (exp_calc, timestamp, user_id))
+    conn.commit()
+    conn.close()
 
 
 ## Guild things
