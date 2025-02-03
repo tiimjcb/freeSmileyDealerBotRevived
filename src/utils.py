@@ -85,9 +85,6 @@ def process_message_for_smiley(message):
         result = cursor.fetchone()
 
         if result:
-            logger.info(f"{user_name} in {guild_name} said the word '{word}' -> proper response sent (special trigger)")
-            logger.debug(
-                f"Special trigger found - ID: '{result[0]}', Trigger: '{result[1]}', Response: '{result[2]}', Is Emoji: '{result[3]}'")
             smileys.append(result[2])
             conn.close()
             return smileys
@@ -103,9 +100,6 @@ def process_message_for_smiley(message):
         result = cursor.fetchone()
 
         if result:
-            logger.info(f"{user_name} in {guild_name} said the word '{word}' -> Smiley sent")
-            logger.debug(
-                f"Regular trigger found - ID: '{result[0]}', Trigger: '{result[1]}', Response: '{result[2]}', Is Emoji: '{result[3]}'")
             smileys.append(result[2])
 
 
@@ -148,7 +142,6 @@ def add_experience(smileys, user_id, timestamp):
     :param smileys: the smileys to add
     :param user_id: the user id
     :param timestamp: the timestamp of the message
-    :param channel_id: the channel id
     """
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()

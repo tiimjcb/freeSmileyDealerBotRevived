@@ -11,57 +11,64 @@ The **Free Smiley Dealer Bot Revived** (FSD Revived) is committed to respecting 
 FSD Revived collects **minimal data** strictly for operational and debugging purposes:
 
 1. **Guild ID**  
-   - Purpose: To identify which Discord server the bot is operating in, for logging and debugging purposes.
-   - Storage: This is only logged temporarily in runtime logs.
+   - **Purpose:** To identify which Discord server the bot is operating in, for logging and debugging purposes.  
+   - **Storage:** Stored in a database to maintain server-specific settings. 
 
-2. **Usernames**  
-   - Purpose: To display in logs who triggered a bot action (e.g., detected emoji). This helps identify issues or abuse.
-   - Storage: Only stored temporarily in runtime logs.
+2. **User ID**  
+   - **Purpose:** To track user interactions with the bot, such as emoji detections and experience points for the leaderboard system.  
+   - **Storage:** Stored in a database to maintain experience progression across servers.  
+   - **Opt-out:** Users can request to have their data removed by contacting the developers via Discord.  
 
 3. **Messages**  
-   - Purpose: To analyse the message, so the bot can identify the different triggers (*such as emojis*) or the "Friday messages" (*is it friday?*).
-   - Storage: The entire message is only stored temporarily while the bot processes it (it's a matter of nano-seconds). Only the trigger that was present in the message is stored for logging purposes (*in "this message is a test 😄", only "😄" is stored in the logs*).
+   - **Purpose:** The bot analyzes messages in real time to detect triggers (*such as emojis* or the "Friday messages" like *is it Friday?*).  
+   - **Storage:** **No part of the message content is stored**.
 
 ---
 
 ## Data Usage
 
-The collected data is **not shared**, **sold**, or **used for marketing purposes**. Its sole purpose is to:
-- Debug issues with the bot.
-- Provide transparency in logs for bot owners or administrators.
+The collected data is **not shared**, **sold**, or **used for marketing purposes**. Its sole purpose is to:  
+
+- Debug issues with the bot.  
+- Maintain functionality such as experience tracking and leaderboards.  
 
 ---
 
 ## Data Retention
 
-- All logs are temporary and only exist while the bot is running. Everyday, a log file is created on the host server. A log file lasts **10 days** before deletion.
-- No data is stored persistently in any database, file, or external service.
+- **User IDs and experience points** are stored **persistently** in a database to maintain user progression.  
+- **Guild IDs** are stored for server settings and operational purposes.  
+- **Logs** are temporary and automatically deleted after **10 days**.  
 
 ---
 
 ## User Rights
 
-Since FSD Revived does not store any personal data persistently:
-- You have the right to request that your data not be logged, but this will limit the bot's ability to operate effectively.
-- If you believe the bot is logging data improperly, please report this via GitHub or to the bot's developers.
+Since FSD Revived stores **only essential operational data**, users have the following rights:  
+
+- **Opt-out:** You may request that your **User ID and experience data** be removed from the database by contacting the developers via Discord.  
+- **Transparency:** If you believe the bot is handling data improperly, please report it via GitHub or to the bot's developers.  
 
 ---
 
 ## Third Parties
 
-FSD Revived does not share any data with third parties. However, as the bot operates on Discord, its behavior and interactions may be subject to Discord's [Privacy Policy](https://discord.com/privacy).
+FSD Revived does not share any data with third parties. However, as the bot operates on Discord, its behavior and interactions may be subject to Discord's [Privacy Policy](https://discord.com/privacy).  
 
 ---
 
 ## Contact
 
-If you have questions about this Privacy Policy or the bot's compliance with GDPR, please contact the developers via the [GitHub repository](https://github.com/tiimjcb/freeSmileyDealerBotRevived).
+If you have questions about this Privacy Policy or wish to opt out of data collection, please contact the developers via:  
+
+- **GitHub Repository:** [Free Smiley Dealer Bot Revived](https://github.com/tiimjcb/freeSmileyDealerBotRevived)  
+- **Discord Contacts:** `@tiim.jcb`  
 
 ---
 
 ## Changes to This Policy
 
-This Privacy Policy may be updated periodically to reflect changes in bot functionality or legal requirements. Any significant changes will be documented in the [GitHub repository](https://github.com/tiimjcb/freeSmileyDealerBotRevived).
+This Privacy Policy may be updated periodically to reflect changes in bot functionality or legal requirements. Any significant changes will be documented in the [GitHub repository](https://github.com/tiimjcb/freeSmileyDealerBotRevived).  
 
 ---
 
