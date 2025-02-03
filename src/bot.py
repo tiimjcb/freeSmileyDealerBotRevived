@@ -228,10 +228,6 @@ async def experience(interaction, user: discord.Member = None):
 
 
 
-
-import sqlite3
-import discord
-
 @tree.command(name="leaderboard", description="See the experience leaderboard for your server")
 async def leaderboard(interaction):
     """
