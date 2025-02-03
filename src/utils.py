@@ -8,8 +8,6 @@ from logger import logger
 import discord
 from discord.ui import View, Button
 
-from src.bot import inform_user_exp_system
-
 friday_hours = []
 
 ## Smiley things

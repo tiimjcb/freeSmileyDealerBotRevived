@@ -63,6 +63,7 @@ if not UPDATE_PATH:
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 bot = discord.Client(intents=intents)
 tree = app_commands.CommandTree(bot)
 
@@ -224,6 +225,53 @@ async def experience(interaction, user: discord.Member = None):
 
     conn.close()
     await interaction.response.send_message(response)
+
+
+
+
+import sqlite3
+import discord
+
+@tree.command(name="leaderboard", description="See the experience leaderboard for your server")
+async def leaderboard(interaction):
+    """
+    Displays the top 10 users in the experience leaderboard for the current server.
+    Only users in the database AND in the server are shown, excluding bots.
+    """
+    guild = interaction.guild
+
+    server_member_ids = {member.id for member in guild.members if not member.bot}
+
+    if not server_member_ids:
+        await interaction.response.send_message("no eligible members found in this server. seems like nobody have experience <:redAngry:1313876421227057193>", ephemeral=True)
+        return
+
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    query = f"SELECT user_id, exp FROM users_settings WHERE user_id IN ({','.join(['?'] * len(server_member_ids))}) ORDER BY exp DESC LIMIT 10"
+    cursor.execute(query, tuple(server_member_ids))
+    leaderboard = cursor.fetchall()
+
+    conn.close()
+
+    top_10 = leaderboard[:10]
+
+    if not top_10:
+        await interaction.response.send_message("No users in this server have experience yet.", ephemeral=True)
+        return
+
+    embed = discord.Embed(title=f"<:trophy:1313940520782925834> {guild.name} free official leaderboard ", color=discord.Color.gold())
+
+    leaderboard_text = ""
+    for rank, (user_id, exp) in enumerate(top_10, start=1):
+        member = guild.get_member(user_id)
+        username = member.display_name if member else f"Unknown ({user_id})"
+        leaderboard_text += f"**#{rank}** {username} — **{exp} XP**\n"
+
+    embed.description = leaderboard_text
+    await interaction.response.send_message(embed=embed)
+
 
 
 
