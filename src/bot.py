@@ -94,6 +94,7 @@ async def help_command(interaction):
         "> - `/random` : get a random smiley \n"
         "> - `/show_triggers` : show all of the different triggers \n"
         "> - `/experience` : see your experience points or someone else's \n"
+        "> - `/leaderboard` : see the experience leaderboard for your server \n"
     )
 
     if is_admin:

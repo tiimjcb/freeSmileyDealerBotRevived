@@ -42,6 +42,14 @@ The Free Smiley Dealer Bot Revived offers the following features:
 
 All the triggers are set on a database ! You can submit your suggestions on the Discord ! 😄
 
+### Experience System
+You guys can gain experience across all servers by feeding the bot with paid smileys.
+You can check your experience with the `/experience` command. And you can even ping a friend to see their experience too!
+
+Moreover, there's a leaderboard on each server with the `/leaderboard` command.
+
+For each emoji detected, you get 1 experience point, with a limit of 5 per message.
+
 ### Server Settings
 
 You can customize the bot’s behavior per server:
