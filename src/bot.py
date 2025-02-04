@@ -252,6 +252,7 @@ async def leaderboard(interaction):
 
 @tree.command(name="follow", description="Follow a user to track their emoji usage")
 @app_commands.describe(user="The user you want to stalk -- leave empty to follow yourself")
+@app_commands.default_permissions()
 async def follow(interaction, user: discord.Member = None):
     """
     Starts or stops tracking a user's emoji usage.
