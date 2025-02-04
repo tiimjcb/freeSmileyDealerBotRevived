@@ -262,6 +262,7 @@ async def follow(interaction, user: discord.Member = None):
     user_id = user.id
     follower_id = interaction.user.id
     channel_id = interaction.channel.id
+    server_id = interaction.guild.id
 
     if is_user_blacklisted(user_id):
         await interaction.response.send_message(
@@ -273,7 +274,7 @@ async def follow(interaction, user: discord.Member = None):
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
 
-    cursor.execute("SELECT follower_id FROM followed_users WHERE followed_user_id = ?", (user_id,))
+    cursor.execute("SELECT follower_id FROM followed_users WHERE followed_user_id = ? AND server_id = ?", (user_id, server_id))
     followed = cursor.fetchone()
 
     if followed:
@@ -281,30 +282,31 @@ async def follow(interaction, user: discord.Member = None):
 
         if follower_id != existing_follower_id and follower_id != user_id:
             await interaction.response.send_message(
-                f"i already follow {user.mention}. shhhh... <:nerd:1313933240486203522> ",
+                f"i already follow {user.mention} in this server. shhhh... <:nerd:1313933240486203522> ",
                 ephemeral=True
             )
             conn.close()
             return
 
         conn.close()
-        await stop_following(user_id, "manual", interaction)
+        await stop_following(user_id, server_id, "manual", interaction)
         return
     else:
 
         cursor.execute(
-            "INSERT INTO followed_users (followed_user_id, follower_id, channel_id) VALUES (?, ?, ?)",
-            (user_id, follower_id, channel_id)
+            "INSERT INTO followed_users (followed_user_id, follower_id, channel_id, server_id) VALUES (?, ?, ?, ?)",
+            (user_id, follower_id, channel_id, server_id)
         )
         conn.commit()
         conn.close()
 
         response = (
-            f"im now tracking {user.mention}'s smiley usage. don't tell them... <:eyes_1:1313927864734711858> \n"
-            "-# type /follow {user} to stop"
+            f"im now tracking {user.mention}'s smiley usage in **{interaction.guild.name}**. don't tell them... <:eyes_1:1313927864734711858> \n"
+            f"-# type `/follow {user}` to stop"
         )
 
         await interaction.response.send_message(response)
+
 
 
 
@@ -783,18 +785,18 @@ async def update_bot(interaction):
 @tasks.loop(minutes=5)
 async def cleanup_followed_users():
     """
-    Periodically removes users who have been followed for more than 24 hours.
+    Periodically removes users who have been followed for more than 24 hours on a per-server basis.
     """
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
 
-    cursor.execute("SELECT followed_user_id FROM followed_users WHERE start_time <= DATETIME('now', '-1 day')")
+    cursor.execute("SELECT followed_user_id, server_id FROM followed_users WHERE start_time <= DATETIME('now', '-1 day')")
     expired_users = cursor.fetchall()
 
     conn.close()
 
-    for user_id in expired_users:
-        await stop_following(user_id[0], "auto")
+    for user_id, server_id in expired_users:
+        await stop_following(user_id, server_id, "auto")
 
 
 
@@ -807,18 +809,18 @@ async def update_activity_status():
 
 
 
-async def stop_following(user_id, reason, interaction=None):
+async def stop_following(user_id, server_id, reason, interaction=None):
     """
-    Stops tracking an followed user and sends a summary message.
+    Stops tracking a followed user on a specific server and sends a summary message.
     If called manually via `/follow`, interaction is required.
-    If called automatically, interaction is None and the channel is fetched from DB.
+    If called automatically, interaction is None and the channel is fetched from the DB.
     """
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT follower_id, emoji_count, smiley_count, channel_id FROM followed_users WHERE followed_user_id = ?",
-        (user_id,)
+        "SELECT follower_id, emoji_count, smiley_count, channel_id FROM followed_users WHERE followed_user_id = ? AND server_id = ?",
+        (user_id, server_id)
     )
     followed = cursor.fetchone()
 
@@ -828,7 +830,7 @@ async def stop_following(user_id, reason, interaction=None):
 
     follower_id, emoji_count, smiley_count, channel_id = followed
 
-    cursor.execute("DELETE FROM followed_users WHERE followed_user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM followed_users WHERE followed_user_id = ? AND server_id = ?", (user_id, server_id))
     conn.commit()
     conn.close()
 
@@ -838,14 +840,17 @@ async def stop_following(user_id, reason, interaction=None):
         f"> - **{smiley_count}** free smileys received <a:angel:1313891911219679283>"
     )
 
-    # select the right channel based on if its an automatic or manual stop
+    # selecting the right channel
     if reason == "manual":
         await interaction.response.send_message(message, ephemeral=False)
     elif reason == "auto":
-        guild = interaction.client.get_guild(interaction.guild_id)
-        channel = guild.get_channel(channel_id)
-        if channel:
-            await channel.send(message)
+        guild = interaction.client.get_guild(server_id)
+        if guild:
+            channel = guild.get_channel(channel_id)
+            if channel:
+                await channel.send(message)
+
+
 
 
 

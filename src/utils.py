@@ -107,12 +107,10 @@ async def process_message_for_smiley(message):
         if result:
             smileys.append(result[2])
 
-    cursor.execute("SELECT * FROM followed_users WHERE followed_user_id = ?", (message.author.id,))
+    cursor.execute("SELECT * FROM followed_users WHERE followed_user_id = ? and server_id = ?", (message.author.id, message.guild.id))
     followed = cursor.fetchone()
-    conn.close()
-
     if followed:
-        await update_follow_stats(message.author.id, len(emojis), len(smileys))
+        await update_follow_stats(message.author.id, guild_id, len(emojis), len(smileys))
 
     conn.close()
     return smileys if smileys else None
@@ -120,10 +118,11 @@ async def process_message_for_smiley(message):
 
 
 
-async def update_follow_stats(user_id, emoji_count, smiley_count):
+async def update_follow_stats(user_id, server_id, emoji_count, smiley_count):
     """
-    Updates the emoji/smiley count for a followed user.
+    Updates the emoji/smiley count for a followed user on a specific server.
     :param user_id: the user id
+    :param server_id: the server where the tracking is active
     :param emoji_count: the number of emojis detected
     :param smiley_count: the number of smileys given
     """
@@ -131,8 +130,8 @@ async def update_follow_stats(user_id, emoji_count, smiley_count):
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE followed_users SET emoji_count = emoji_count + ?, smiley_count = smiley_count + ? WHERE followed_user_id = ?",
-        (emoji_count, smiley_count, user_id)
+        "UPDATE followed_users SET emoji_count = emoji_count + ?, smiley_count = smiley_count + ? WHERE followed_user_id = ? AND server_id = ?",
+        (emoji_count, smiley_count, user_id, server_id)
     )
 
     conn.commit()
