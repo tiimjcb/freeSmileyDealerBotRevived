@@ -486,31 +486,6 @@ def process_friday_ask_message(timezone):
 
 
 
-## Log things
-
-def get_last_log_lines(n: int, log_dir: str):
-    """
-    Retrieves the last n lines from the most recently modified log file in the specified directory.
-    """
-    try:
-        # get the last modified log file
-        log_files = [f for f in os.listdir(log_dir) if f.endswith(".log")]
-        if not log_files:
-            raise FileNotFoundError("No log files found in the specified directory.")
-
-        log_files = sorted(log_files, key=lambda f: os.path.getmtime(os.path.join(log_dir, f)), reverse=True)
-        latest_log_file = os.path.join(log_dir, log_files[0])
-
-        # Read the last n lines
-        with open(latest_log_file, "r") as log_file:
-            lines = log_file.readlines()
-            return "".join(lines[-n:]) if len(lines) >= n else "".join(lines)
-
-    except Exception as e:
-        logger.error("An error occurred while reading the logs.")
-        return f"An error occurred while reading the logs: {e}"
-
-
 ## Discord PaginatedView things
 
 class PaginatedView(View):

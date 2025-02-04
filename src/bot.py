@@ -230,6 +230,7 @@ async def experience(interaction, user: discord.Member = None):
 
 
 @tree.command(name="leaderboard", description="See the experience leaderboard for your server")
+@app_commands.checks.cooldown(1, 600.0, key=lambda i: i.guild_id)
 async def leaderboard(interaction):
     """
     Displays the top 10 users in the experience leaderboard for the current server.
@@ -617,6 +618,7 @@ async def set_timezone(interaction, timezone: TimezoneAutocomplete):
 
     conn.close()
 
+
 # pause command - server_settings[6]
 @tree.command(name="pause_bot", description="Pause the bot in the server")
 @app_commands.describe(enable="True to pause the bot, False to unpause it")
@@ -651,6 +653,7 @@ async def pause(interaction, enable: bool):
     logger.info(f"Bot paused status modified for guild {guild_id}. Current status: {result[6]}")
 
     conn.close()
+
 
 ##################### BOT ADMINISTRATIVE COMMANDS #####################
 
@@ -743,33 +746,6 @@ async def remove_trigger(interaction, trigger: str):
         conn.close()
 
 
-@tree.command(name="logs", description="Get the n last lines of logs")
-@app_commands.guilds(discord.Object(id=ADMINGUILD))
-@app_commands.describe(n="Number of lines to get -- max 10, otherwise Discord won't allow it.")
-async def logs(interaction, n: int):
-    if interaction.user.id != int(ADMINUSER_T) and interaction.user.id != int(ADMINUSER_A):
-        await interaction.response.send_message(
-            "You do not have permission to use this command. Only the administators of the bot can use this! <:redAngry:1313876421227057193>",
-            ephemeral=True
-        )
-        return
-
-    if n > 10:
-        await interaction.response.send_message(
-            "You can't get more than 10 lines of logs at once.",
-            ephemeral=True
-        )
-        return
-
-    log_dir = "../logs"  # Replace with your actual log directory
-    log_content = get_last_log_lines(n, log_dir)
-
-    # Send the response
-    await interaction.response.send_message(
-        f"```plaintext\n{log_content}\n```",
-        ephemeral=True
-    )
-
 
 @tree.command(name="update_bot", description="Update the bot code and restart it")
 @app_commands.guilds(discord.Object(id=ADMINGUILD))
@@ -829,6 +805,22 @@ async def update_activity_status():
 
 
 ##################### DISCORD BOT EVENTS #####################
+
+## Tree event
+@tree.error
+async def on_app_command_error(interaction, error: app_commands.AppCommandError):
+    """Global error handler for app commands"""
+    if isinstance(error, app_commands.errors.CommandOnCooldown):
+        retry_after = round(error.retry_after, 2)
+        await interaction.response.send_message(
+            f"This command is on cooldown! Try again in **{retry_after}** seconds <:yawning_face:1313941450144223242>",
+            ephemeral=True
+        )
+    else:
+        await interaction.response.send_message("An error occurred while executing the command. <:redAngry:1313876421227057193>", ephemeral=True)
+        logger.error(f"Unhandled command error: {error}")
+
+
 
 ## Bot events
 @bot.event
