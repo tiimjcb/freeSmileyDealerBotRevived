@@ -2,7 +2,6 @@ from discord import app_commands
 from dotenv import load_dotenv
 from utils import *
 from discord.ext import tasks
-import random
 import sys
 import subprocess
 
@@ -252,7 +251,6 @@ async def leaderboard(interaction):
 
 @tree.command(name="follow", description="Follow a user to track their emoji usage")
 @app_commands.describe(user="The user you want to stalk -- leave empty to follow yourself")
-@app_commands.default_permissions()
 async def follow(interaction, user: discord.Member = None):
     """
     Starts or stops tracking a user's emoji usage.
@@ -315,6 +313,7 @@ async def follow(interaction, user: discord.Member = None):
 # text triggers settings - server_settings[1]
 @tree.command(name="set_text_triggers", description="Enable or disable text triggers (e.g., 'hi')")
 @app_commands.describe(enable="True to enable text triggers, False to disable them")
+@app_commands.default_permissions()
 async def set_text_triggers(interaction, enable: bool):
 
     # admin check
@@ -357,6 +356,7 @@ async def set_text_triggers(interaction, enable: bool):
 # smiley messages settings - server_settings[2]
 @tree.command(name="set_smiley_messages", description="Enable or disable smiley messages (bot sends emojis as messages)")
 @app_commands.describe(enable="True to enable smiley messages, False to disable them")
+@app_commands.default_permissions()
 async def set_smiley_messages(interaction, enable: bool):
 
     # admin check
@@ -397,6 +397,7 @@ async def set_smiley_messages(interaction, enable: bool):
 # smiley reactions settings - server_settings[3]
 @tree.command(name="set_smiley_reactions", description="Enable or disable smiley reactions (bot reacts to messages with emojis)")
 @app_commands.describe(enable="True to enable smiley reactions, False to disable them")
+@app_commands.default_permissions()
 async def set_smiley_reactions(interaction, enable: bool):
 
     # usual admin check
@@ -436,6 +437,7 @@ async def set_smiley_reactions(interaction, enable: bool):
 # friday messages settings - server_settings[4]
 @tree.command(name="set_friday_messages", description="Enable or disable reactions to friday related messages")
 @app_commands.describe(enable="True to enable friday messages, False to disable them")
+@app_commands.default_permissions()
 async def set_friday_messages(interaction, enable: bool):
 
         # usual admin check
@@ -476,6 +478,7 @@ async def set_friday_messages(interaction, enable: bool):
 # blacklist channels -- different table in the db (channel_blacklist)
 @tree.command(name="blacklist_channel", description="Toggle blacklist status for a channel")
 @app_commands.describe(channel="Mention the channel (e.g., #general) you want to toggle blacklist status for")
+@app_commands.default_permissions()
 async def blacklist_channel(interaction, channel: discord.TextChannel):
 
     # Usual admin check
@@ -504,6 +507,7 @@ async def blacklist_channel(interaction, channel: discord.TextChannel):
 # blacklist triggers -- different table in the db (triggers_blacklist)
 @tree.command(name="blacklist_trigger", description="Set or remove blacklist for a trigger for this server")
 @app_commands.describe(trigger_word="The word or emoji to (un)blacklist for this server")
+@app_commands.default_permissions()
 async def blacklist_trigger(interaction, trigger_word: str):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
@@ -553,6 +557,7 @@ async def blacklist_trigger(interaction, trigger_word: str):
     conn.close()
 
 @tree.command(name="show_blacklisted_triggers", description="Show the trigger blacklist for this server")
+@app_commands.default_permissions()
 async def show_blacklisted_triggers(interaction):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
@@ -596,6 +601,7 @@ class TimezoneAutocomplete(app_commands.Transformer):
 
 @tree.command(name="set_timezone", description="Set the timezone for the server")
 @app_commands.describe(timezone="The timezone to set")
+@app_commands.default_permissions()
 async def set_timezone(interaction, timezone: TimezoneAutocomplete):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
@@ -628,6 +634,7 @@ async def set_timezone(interaction, timezone: TimezoneAutocomplete):
 # pause command - server_settings[6]
 @tree.command(name="pause_bot", description="Pause the bot in the server")
 @app_commands.describe(enable="True to pause the bot, False to unpause it")
+@app_commands.default_permissions()
 async def pause(interaction, enable: bool):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
