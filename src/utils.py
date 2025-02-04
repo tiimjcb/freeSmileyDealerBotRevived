@@ -407,7 +407,7 @@ def process_friday_ask_message(timezone):
             "no. and i hate tuesdays. better not fuck with me today. <:middle_finger:1313933112635555911>",
             "no, no, no. <a:bigCry:1313925251108835348>",
             "no, non, nein, não, niet, nee, nie, ei, na, njet, nu, não, nie, nej, ne, nao, neen, nai, ikke, nieto, nije, num, ná, não, nē, nyet <:nerd:1313933240486203522>",
-            "negative, we're not tuesday today. <a:thumbs_down:1313939628826431568>"
+            "negative, we're not tuesday today. <a:thumbs_down:1313939628826431568>",
             "leave me alone it's not friday. <:redAngry:1313876421227057193>",
             "no fridey todey <:yum:1313941486764556338>",
             "01101110 01101111 00100000 01101001 01110100 00100111 01110011 00100000 01101110 01101111 01110100 00100000 01100110 01110010 01101001 01100100 01100001 01111001 00100000 01110100 01101111 01100100 01100001 01111001 00001010 <:lore:1314281452204068966>",
