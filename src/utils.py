@@ -77,7 +77,7 @@ async def process_message_for_smiley(message):
     #logger.debug(f"Processed words: {words}") # idem
 
     emojis = [word for word in words if emoji.is_emoji(word)]
-    logger.debug(f"Emojis: {emojis}") # idem
+    # logger.debug(f"Emojis: {emojis}")      # idem
     smileys = []
 
     # first: scan for special triggers
@@ -256,6 +256,7 @@ def is_channel_blacklisted(guild_id, channel_id):
     result = cursor.fetchone()
     conn.close()
     return result is not None
+
 
 def is_user_blacklisted(user_id):
     """

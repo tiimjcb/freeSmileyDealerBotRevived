@@ -249,9 +249,9 @@ async def leaderboard(interaction):
     await interaction.response.send_message(embed=embed)
 
 
+
 @tree.command(name="follow", description="Follow a user to track their emoji usage")
 @app_commands.describe(user="The user you want to stalk -- leave empty to follow yourself")
-@app_commands.checks.cooldown(1, 60.0, key=lambda i: i.user.id)
 async def follow(interaction, user: discord.Member = None):
     """
     Starts or stops tracking a user's emoji usage.
@@ -280,7 +280,7 @@ async def follow(interaction, user: discord.Member = None):
 
         if follower_id != existing_follower_id and follower_id != user_id:
             await interaction.response.send_message(
-                f"<:nerd:1313933240486203522> i already follow {user.mention}. shhhh...",
+                f"i already follow {user.mention}. shhhh... <:nerd:1313933240486203522> ",
                 ephemeral=True
             )
             conn.close()
@@ -298,9 +298,12 @@ async def follow(interaction, user: discord.Member = None):
         conn.commit()
         conn.close()
 
-        await interaction.response.send_message(
-            f"<:eyes_1:1313927864734711858> im now tracking {user.mention}'s smiley usage. type /follow to stop",
+        response = (
+            f"im now tracking {user.mention}'s smiley usage. don't tell them... <:eyes_1:1313927864734711858> \n"
+            "-# type /follow {user} to stop"
         )
+
+        await interaction.response.send_message(response)
 
 
 
