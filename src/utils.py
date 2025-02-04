@@ -1,4 +1,6 @@
 import datetime
+
+import emoji
 import pytz
 import random
 import sqlite3
@@ -48,14 +50,13 @@ def merge_regional_indicators(words):
     return merged_words
 
 
-def process_message_for_smiley(message):
+async def process_message_for_smiley(message):
     """
     return the smileys of the emojis in a string that has an occurence in the database.
     if no emoji is in the string, or if none of the emojis in the string have an occurence, it returns None.
     """
     guild_id = message.guild.id if message.guild else "DM"
-    guild_name = message.guild.name if message.guild else "DM"
-    user_name = message.author.name
+
 
     # connect to the database
     conn = sqlite3.connect('../databases/bot.db')
@@ -71,8 +72,12 @@ def process_message_for_smiley(message):
     # break the message into words -> we use the normalize_emoji() function to remove skin tone modifiers
     words = [normalize_emoji(word) for word in re.findall(r'\w+|[^\w\s]', message.content)]
     #logger.debug(f"Words: {words}")                # commented because it's useful for debugging. disabled on host.
+
     words = [word for word in merge_regional_indicators(words) if word.lower() not in blacklisted_triggers]
-    #logger.debug(f"Processed words: {words}")      # idem
+    #logger.debug(f"Processed words: {words}") # idem
+
+    emojis = [word for word in words if emoji.is_emoji(word)]
+    logger.debug(f"Emojis: {emojis}") # idem
     smileys = []
 
     # first: scan for special triggers
@@ -102,9 +107,37 @@ def process_message_for_smiley(message):
         if result:
             smileys.append(result[2])
 
+    cursor.execute("SELECT * FROM followed_users WHERE followed_user_id = ?", (message.author.id,))
+    followed = cursor.fetchone()
+    conn.close()
+
+    if followed:
+        await update_follow_stats(message.author.id, len(emojis), len(smileys))
 
     conn.close()
     return smileys if smileys else None
+
+
+
+
+async def update_follow_stats(user_id, emoji_count, smiley_count):
+    """
+    Updates the emoji/smiley count for a followed user.
+    :param user_id: the user id
+    :param emoji_count: the number of emojis detected
+    :param smiley_count: the number of smileys given
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE followed_users SET emoji_count = emoji_count + ?, smiley_count = smiley_count + ? WHERE followed_user_id = ?",
+        (emoji_count, smiley_count, user_id)
+    )
+
+    conn.commit()
+    conn.close()
+
 
 
 def get_random_smiley(db_path='../databases/bot.db'):
@@ -287,30 +320,6 @@ def blacklisted_triggers_list(guild_id):
 
 
 ### Friday things
-
-def generate_friday_schedule():
-    """
-    Generate a random schedule for Friday messages.
-    Between 5 and 12 times a day, at random hours and minutes.
-    """
-    friday_hours.clear()
-    num_messages = random.randint(15, 22)
-    for _ in range(num_messages):
-        hour = random.choices(
-            population=range(24),
-            weights=[1] * 8 + [3] * 16,  # Weights: 1 for hours 0-7, 3 for hours 8-23
-            k=1
-        )[0]
-        minute = random.randint(0, 59)
-        friday_hours.append((hour, minute))
-
-
-def is_friday_random_time():
-    """
-    check if the current time matches one of the pre-generated Friday times.
-    """
-    now = datetime.datetime.now()
-    return now.weekday() == 4 and (now.hour, now.minute) in friday_hours
 
 
 def is_friday_ask_message(message):

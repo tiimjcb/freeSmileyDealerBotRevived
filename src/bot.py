@@ -9,28 +9,6 @@ import subprocess
 
 ##################### VARIABLES #####################
 
-# list of messages to send on friday
-friday_messages = [
-    "its fridey yoohoo <:partying_face:1313934941658021888>",
-    "lest go is friday <:yellow:1313941466862587997>",
-    "friday friday friday <a:crazy_laugh:1313932126026203216>",
-    "todey is fridnay <:lore:1314281452204068966>",
-    "hey everione its friday <a:wink2:1313941408738050098>",
-    "sorry was sleping thought it was thursday <a:bigCry:1313925251108835348>, but its friday yahoo <:smirk:1313938566484852839>",
-    "FRIDAY <a:stuck_out_tongue:1313938771804422285>",
-    "yall know its friday right??????? <:redAngry:1313876421227057193>",
-    "are yo guys talking enough about fridey???? <:weary:1313940711627948164>",
-    "is it friday? <:hushed_1:1313930520702226482>",
-    "bruh friday is lit <:hot_face:1313930434761068574>",
-    "what should we eat?? FRIES, BECAUSE ITS FRIES DAY <:fries_1:1313929014599225405>",
-    "fish <:fish:1313927965519773818>",
-    "i am the fridnay king <:king:1313883436129194064>",
-    "IM NOT SURE YOU ALL KNOW THAT ITS FRIDAY <:tv:1313884206149144628>",
-    "attention guys, it's fridya !! <:exclamation_1:1313927841322373261>",
-    "today is friday, the best day of the week <:happy:1313889573876662323>",
-]
-
-
 # get the token
 load_dotenv("../var.env")
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -271,37 +249,59 @@ async def leaderboard(interaction):
     await interaction.response.send_message(embed=embed)
 
 
+@tree.command(name="follow", description="Follow a user to track their emoji usage")
+@app_commands.describe(user="The user you want to stalk -- leave empty to follow yourself")
+@app_commands.checks.cooldown(1, 60.0, key=lambda i: i.user.id)
+async def follow(interaction, user: discord.Member = None):
+    """
+    Starts or stops tracking a user's emoji usage.
+    If no user is mentioned, follows the command executor.
+    """
+    user = user or interaction.user
+    user_id = user.id
+    follower_id = interaction.user.id
+    channel_id = interaction.channel.id
 
-
-
-##################### GET FRIDAY SCHEDULE COMMAND #########################
-
-@tree.command(name="friday_schedule", description="See the Friday yapping schedule")
-@app_commands.guilds(discord.Object(id=1231115041432928326))
-async def friday_schedule(interaction):
-    if datetime.datetime.now().weekday() != 4:
+    if is_user_blacklisted(user_id):
         await interaction.response.send_message(
-            "It's not Friday yet (at least in France), there's no schedule to show. <:redAngry:1313876421227057193>",
+            f"<:redAngry:1313876421227057193> i can't track {user.mention}, he's in my blacklist. too bad.",
             ephemeral=True
         )
         return
 
-    sorted_schedule = sorted(friday_hours)
-    now = datetime.datetime.now()
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
 
-    message = "### Today, I'll yap at:\n"
-    for hour, minute in sorted_schedule:
-        target_time = datetime.datetime.combine(now.date(), datetime.time(hour, minute))
-        timestamp = int(target_time.timestamp())
+    cursor.execute("SELECT follower_id FROM followed_users WHERE followed_user_id = ?", (user_id,))
+    followed = cursor.fetchone()
 
+    if followed:
+        existing_follower_id = followed[0]
 
-        if now > target_time:
-            message += f"> - ~~<t:{timestamp}:t>~~\n"
-        else:
-            message += f"> - <t:{timestamp}:t>\n"
+        if follower_id != existing_follower_id and follower_id != user_id:
+            await interaction.response.send_message(
+                f"<:nerd:1313933240486203522> i already follow {user.mention}. shhhh...",
+                ephemeral=True
+            )
+            conn.close()
+            return
 
-    await interaction.response.send_message(message, ephemeral=True)
-    logger.info(f"{interaction.user} used the /friday_schedule command to see the Friday schedule.")
+        conn.close()
+        await stop_following(user_id, "manual", interaction)
+        return
+    else:
+
+        cursor.execute(
+            "INSERT INTO followed_users (followed_user_id, follower_id, channel_id) VALUES (?, ?, ?)",
+            (user_id, follower_id, channel_id)
+        )
+        conn.commit()
+        conn.close()
+
+        await interaction.response.send_message(
+            f"<:eyes_1:1313927864734711858> im now tracking {user.mention}'s smiley usage. type /follow to stop",
+        )
+
 
 
 ##################### GUILD ADMINISTRATIVE COMMANDS #####################
@@ -775,22 +775,22 @@ async def update_bot(interaction):
 
 ##################### TIME BASED EVENTS #####################
 
-@tasks.loop(minutes=1)
-async def friday_message():
-    if is_friday_random_time():
-        guild_id = 1231115041432928326
-        channel_id = 1231369439879102496
 
-        guild = bot.get_guild(guild_id)
-        if guild:
-            channel = guild.get_channel(channel_id)
-            if channel:
-                random_message = random.choice(friday_messages)
-                await channel.send(random_message)
-            else:
-                logger.error(f"Channel with ID {channel_id} not found in guild {guild_id}. Can't send the Friday message.")
-        else:
-            logger.error(f"Guild with ID {guild_id} not found. Can't send the Friday message.")
+@tasks.loop(minutes=5)
+async def cleanup_followed_users():
+    """
+    Periodically removes users who have been followed for more than 24 hours.
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT followed_user_id FROM followed_users WHERE start_time <= DATETIME('now', '-1 day')")
+    expired_users = cursor.fetchall()
+
+    conn.close()
+
+    for user_id in expired_users:
+        await stop_following(user_id[0], "auto")
 
 
 
@@ -801,6 +801,47 @@ async def update_activity_status():
                                     name=f" {len(bot.guilds)} servers to use free smileys")
         await bot.change_presence(status=discord.Status.online, activity=activity)
 
+
+
+async def stop_following(user_id, reason, interaction=None):
+    """
+    Stops tracking an followed user and sends a summary message.
+    If called manually via `/follow`, interaction is required.
+    If called automatically, interaction is None and the channel is fetched from DB.
+    """
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT follower_id, emoji_count, smiley_count, channel_id FROM followed_users WHERE followed_user_id = ?",
+        (user_id,)
+    )
+    followed = cursor.fetchone()
+
+    if not followed:
+        conn.close()
+        return
+
+    follower_id, emoji_count, smiley_count, channel_id = followed
+
+    cursor.execute("DELETE FROM followed_users WHERE followed_user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+    message = (
+        f"> # i've followed <@{user_id}>\n"
+        f"> - **{emoji_count}** paid smileys sent <:redAngry:1313876421227057193>\n"
+        f"> - **{smiley_count}** free smileys received <a:angel:1313891911219679283>"
+    )
+
+    # select the right channel based on if its an automatic or manual stop
+    if reason == "manual":
+        await interaction.response.send_message(message, ephemeral=False)
+    elif reason == "auto":
+        guild = interaction.client.get_guild(interaction.guild_id)
+        channel = guild.get_channel(channel_id)
+        if channel:
+            await channel.send(message)
 
 
 
@@ -847,11 +888,6 @@ async def on_ready():
     for guild in guild_list:
         add_guild_to_db(guild.id)
 
-    if datetime.datetime.now().weekday() == 4:
-        generate_friday_schedule()
-        logger.info(f"Generated Friday schedule: {friday_hours}")
-        friday_message.start()
-
     logger.info(f"Bot started and connected as {bot.user} in {len(guild_list)} server!")
     await update_activity_status()
 
@@ -886,6 +922,9 @@ async def on_ready():
     except Exception as e:
         logger.critical(f"Error syncing command tree for the community server : {e}")
 
+    cleanup_followed_users.start()
+
+
 
 ## Guild events
 @bot.event
@@ -917,14 +956,12 @@ async def on_guild_remove(guild):
 ## Message event -- basically the main function of the bot lol
 @bot.event
 async def on_message(message):
-    if message.author.bot:
+    if (message.author.bot or
+            is_channel_blacklisted(message.guild.id, message.channel.id) or
+            is_user_blacklisted(message.author.id)
+    ):
         return
 
-    if is_channel_blacklisted(message.guild.id, message.channel.id):
-        return
-
-    if is_user_blacklisted(message.author.id):
-        return
 
     # get server settings
     guild_id = message.guild.id if message.guild else None
@@ -954,8 +991,7 @@ async def on_message(message):
             await message.channel.send(process_friday_ask_message(timezone))
             return
 
-
-    smileys = process_message_for_smiley(message)
+    smileys = await process_message_for_smiley(message)
     if smileys:
         # sends a message
         if smiley_messages_enabled:
