@@ -379,7 +379,8 @@ async def chat_end(interaction):
     remove_chat(server_id)
 
     await interaction.response.send_message(
-        "chat session ended. see ya later nerds <:yellow:1313941466862587997>"
+        "chat session ended. see ya later nerds <:yellow:1313941466862587997>\n"
+        "-# you can start again in 4 hours"
     )
 
 
