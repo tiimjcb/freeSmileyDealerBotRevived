@@ -607,7 +607,9 @@ async def process_gemini_message(message):
 
     if not chat:
         conn.close()
-        return "no chat found wtf is that error you better terminate the chat <:skull_2:1330118449464217650>"
+        response_text = ("no chat found wtf is that error you better terminate the chat <:skull_2:1330118449464217650>\n"
+                         "-# i might have been restarted. if so, end the chat (`/chat_end`) and start it again (`/chat_start`). you'll be able to do it with no cooldown")
+        return response_text
 
     try:
         response = chat.send_message(message.content)

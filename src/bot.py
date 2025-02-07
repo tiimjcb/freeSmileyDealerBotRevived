@@ -347,7 +347,7 @@ async def chat_start(interaction):
 
     await interaction.response.send_message(
         f"yo the chat session is active -- i'll respond to every message here for **5 minutes**. <:yellow:1313941466862587997>\n"
-        f"-# there's a 50 message limit, and 4h cooldown. sorry, it costs money lol - `/chat_end` to stop"
+        f"-# there's a 50 message limit, and 4h cooldown. sorry, it needs to stay free lol - `/chat_end` to stop"
     )
 
 
