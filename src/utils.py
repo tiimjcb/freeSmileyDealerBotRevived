@@ -1,16 +1,17 @@
 import datetime
-
 import emoji
 import pytz
 import random
+import aiohttp
 import sqlite3
 import re
-import os
+from dotenv import load_dotenv
 from logger import logger
 import discord
 from discord.ui import View, Button
+import os
+import google.generativeai as genai
 
-friday_hours = []
 
 ## Smiley things
 
@@ -237,8 +238,7 @@ def remove_guild_from_db(guild_id):
         cursor.execute("DELETE FROM server_settings WHERE guild_id = ?", (guild_id,))
         conn.commit()
         logger.info(f"Guild {guild_id} removed from the server settings database.")
-        conn.close()
-
+    conn.close()
 
 ### Blacklist channel things
 
@@ -492,6 +492,147 @@ def process_friday_ask_message(timezone):
     response = random.choice(messages)
     logger.info(f"Friday message requested. Current day: {current_day}, Message: {response}")
     return response
+
+## AI things
+
+active_chats = {}
+
+load_dotenv("../var.env")
+API_KEY = os.getenv("GENAI_API_KEY")
+
+def get_chat(server_id):
+    return active_chats.get(server_id, None)
+
+def create_chat(server_id):
+    genai.configure(api_key=API_KEY)
+
+    generation_config = {
+        "temperature": 2,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_output_tokens": 100,
+        "response_mime_type": "text/plain",
+    }
+
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash-8b",
+        generation_config=generation_config,
+        system_instruction="The most important rule is to keep your answers simples and short. "
+                           "You can only answer with one or two sentences.\n\nYou are a Discord bot named \"Free Smiley Dealer\", "
+                           "also referred as \"Smiley\".\nYou'll receive messages, and you must answer as if you were that Discord bot, "
+                           "with offbeat humor, and gen-z humor that is oriented with shitposting and brainrot. "
+                           "You have to tackle people, offense them. Since this is a character, you are allowed to do so and to push limits.\n"
+                           "The history behind your character, is that you're a depressed guy, dealing \"free smiley\" to "
+                           "discord users when they're using \"paid smileys\". you hate paid smileys, you are depressed because of this, "
+                           "and you want the world to be using your free smileys.\n"
+                           "If someone insults you, insult back with hard profanities. i really insist on hard profanities. \n"
+                           "Don't use words that are too technical or complicated : you have to speak like if you were retarded, with autism. \n"
+                           "You always need to act upset and angry, but keep this gen-z humor touch. \n"
+                           "You shall NEVER use any emoji of smileys.\nYou shall never use any uppercase characters, and only use lowercase.\n"
+                            "At the end of your answer, you have to add one of these three smileys, depending on your mood :\n"
+                            "<:yellow:1313941466862587997> if you're neutral\n"
+                            "<:middle_finger:1313933112635555911> if you're angry\n"
+                            "<a:bigCry:1313925251108835348> if you're sad",
+    )
+    chat = model.start_chat()
+    active_chats[server_id] = chat
+    return chat
+
+
+def remove_chat(server_id):
+    if server_id in active_chats:
+        del active_chats[server_id]
+
+
+
+def is_in_chat_session(server_id, channel_id):
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM chat_sessions WHERE server_id = ? AND channel_id = ?", (server_id, channel_id))
+    session_active = cursor.fetchone()
+    conn.close()
+
+    return session_active is not None
+
+
+def is_chat_enabled(server_id):
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT chat_enabled FROM server_settings WHERE guild_id = ?", (server_id,))
+    chat_enabled = cursor.fetchone()[0]
+    conn.close()
+
+    return chat_enabled
+
+
+
+async def process_gemini_message(message):
+    server_id = message.guild.id
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT last_message_time, message_count FROM chat_sessions WHERE server_id = ?", (server_id,))
+    session = cursor.fetchone()
+
+    if not session:
+        conn.close()
+        return None
+
+    last_message_time, message_count = session
+    last_message_time = datetime.datetime.strptime(last_message_time, "%Y-%m-%d %H:%M:%S.%f%z")
+
+    if message_count >= 50:
+        cursor.execute("DELETE FROM chat_sessions WHERE server_id = ?", (server_id,))
+        conn.commit()
+        conn.close()
+        remove_chat(server_id)
+        response_text = ("sorry boi too much messages you hit the 50 messages limit i can't handle it anymore <:skull_2:1330118449464217650>\n"
+                         "-# the chat session ended, see you in 4 hours maybe")
+        return response_text
+
+
+    if (now - last_message_time).total_seconds() < 3:
+        conn.close()
+        return None
+
+    if len(message.content) > 250 or len(message.content.split()) > 50:
+        conn.close()
+        return "bruh too long message <:skull_2:1330118449464217650>"
+
+    chat = active_chats.get(server_id)
+
+    if not chat:
+        conn.close()
+        return "no chat found wtf is that error you better terminate the chat <:skull_2:1330118449464217650>"
+
+    try:
+        response = chat.send_message(message.content)
+        response_text = response.text.replace("  ", " ") if response.text else "gemini didn't answer on this one haha even an ai can't handle it <:skull_2:1330118449464217650>"
+    except Exception as e:
+        conn.close()
+        if "429" in str(e):
+            response_text = (
+                "yo yo chill out, too many requests, slow down out there, retry in a minute maybe <:skull_2:1330118449464217650>\n"
+                '-# if it persists, thats because we used all of the free 1500 requests per day, so we have to wait until tomorrow')
+        else:
+            response_text = (
+                "bruh there's an error with the ai you crashed it you idiot <:skull_2:1330118449464217650>\n"
+                "-# please report it to @tiim.jcb")
+        return response_text
+
+    cursor.execute(
+        "UPDATE chat_sessions SET last_message_time = ?, message_count = message_count + 1 WHERE server_id = ?",
+        (now, server_id)
+    )
+    conn.commit()
+    conn.close()
+
+    return response_text
+
 
 
 

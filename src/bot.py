@@ -1,8 +1,9 @@
 from discord import app_commands
-from dotenv import load_dotenv
 from utils import *
 from discord.ext import tasks
 import sys
+import os
+import datetime
 import subprocess
 
 
@@ -66,7 +67,7 @@ async def help_command(interaction):
         "\n"
         "# Commands <:yellow:1313941466862587997>\n"
         "> - `/ignore_me [true/false]` : add or remove yourself from the bot's blacklist -- the bot will ignore you\n"
-        "> - `/ping` : a simple ping command \n"
+        "> - `/chat_start` - `/chat_end` : start or end a chat session with the bot -- the bot will reply to every message for five minutes (there are rate limits).\n"
         "> - `/help` : this help message \n"
         "> - `/random` : get a random smiley \n"
         "> - `/show_triggers` : show all of the different triggers \n"
@@ -249,9 +250,9 @@ async def leaderboard(interaction):
 
 
 
-@tree.command(name="follow", description="Follow a user to track their emoji usage")
+@tree.command(name="stalk", description="Stalk a user to track their emoji usage")
 @app_commands.describe(user="The user you want to stalk -- leave empty to follow yourself")
-async def follow(interaction, user: discord.Member = None):
+async def stalk(interaction, user: discord.Member = None):
     """
     Starts or stops tracking a user's emoji usage.
     If no user is mentioned, follows the command executor.
@@ -280,14 +281,14 @@ async def follow(interaction, user: discord.Member = None):
 
         if follower_id != existing_follower_id and follower_id != user_id:
             await interaction.response.send_message(
-                f"i already follow {user.mention} in this server. shhhh... <:nerd:1313933240486203522> ",
+                f"i already stalk {user.mention} in this server. shhhh... <:nerd:1313933240486203522> ",
                 ephemeral=True
             )
             conn.close()
             return
 
         conn.close()
-        await stop_following(user_id, server_id, "manual", interaction)
+        await stop_following(user_id, server_id, channel_id, "manual", interaction)
         return
     else:
 
@@ -299,13 +300,87 @@ async def follow(interaction, user: discord.Member = None):
         conn.close()
 
         response = (
-            f"im now tracking {user.mention}'s smiley usage in **{interaction.guild.name}**. don't tell them... <:eyes_1:1313927864734711858> \n"
-            f"-# type `/follow {user}` to stop"
+            f"im now stalking {user.mention}'s smiley usage in this server, don't tell them... <:eyes_1:1313927864734711858> \n"
+            f"-# type `/stalk @{user}` to stop"
         )
 
         await interaction.response.send_message(response)
 
 
+
+@tree.command(name="chat_start", description="Start a chat session with the bot.")
+@app_commands.checks.cooldown(1, 14400, key=lambda i: i.guild_id)
+async def chat_start(interaction):
+    server_id = interaction.guild.id
+    channel_id = interaction.channel.id
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    if not is_chat_enabled(server_id):
+        await interaction.response.send_message(
+            "chat sessions are disabled in this server. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM chat_sessions WHERE server_id = ?", (server_id,))
+    active_session = cursor.fetchone()
+
+    if active_session:
+        await interaction.response.send_message(
+            "nah man i'm already in a chat session in this server <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        conn.close()
+        return
+
+    create_chat(server_id)
+
+    cursor.execute(
+        "INSERT INTO chat_sessions (server_id, channel_id, start_time, last_message_time, message_count) VALUES (?, ?, ?, ?, ?)",
+        (server_id, channel_id, now, now, 0)
+    )
+    conn.commit()
+    conn.close()
+
+    await interaction.response.send_message(
+        f"yo the chat session is active -- i'll respond to every message here for **5 minutes**. <:yellow:1313941466862587997>\n"
+        f"-# there's a 50 message limit, and 4h cooldown. sorry, it costs money lol - `/chat_end` to stop"
+    )
+
+
+
+
+
+@tree.command(name="chat_end", description="End the chat session with the bot.")
+async def chat_end(interaction):
+    server_id = interaction.guild.id
+
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM chat_sessions WHERE server_id = ?", (server_id,))
+    active_session = cursor.fetchone()
+
+    if not active_session:
+        await interaction.response.send_message(
+            "there's no active chat session here bruv 💀",
+            ephemeral=True
+        )
+        conn.close()
+        return
+
+    cursor.execute("DELETE FROM chat_sessions WHERE server_id = ?", (server_id,))
+    conn.commit()
+    conn.close()
+
+    remove_chat(server_id)
+
+    await interaction.response.send_message(
+        "chat session ended. see ya later nerds <:yellow:1313941466862587997>"
+    )
 
 
 ##################### GUILD ADMINISTRATIVE COMMANDS #####################
@@ -529,7 +604,7 @@ async def blacklist_trigger(interaction, trigger_word: str):
     # stop point : the trigger doesn't exist
     if not trigger_id:
         await interaction.response.send_message(
-            f"The trigger '{trigger_word}' does not exist. <:scream:1313937550054002769>",
+            f"the trigger '{trigger_word}' does not even exist <:scream:1313937550054002769>",
             ephemeral=True
         )
         conn.close()
@@ -668,6 +743,43 @@ async def pause(interaction, enable: bool):
     conn.close()
 
 
+@tree.command(name="set_chat", description="Enable or disable chat sessions in the server")
+@app_commands.describe(enable="True to enable chat sessions, False to disable them")
+@app_commands.default_permissions()
+async def set_chat(interaction, enable: bool):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "You do not have permission to use this command. Only administrators can toggle chat sessions. <:redAngry:1313876421227057193>",
+            ephemeral=True
+        )
+        return
+
+    guild_id = interaction.guild_id
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+
+    if not result:
+        cursor.execute("INSERT INTO server_settings (guild_id, chat_enabled) VALUES (?, ?)", (guild_id, int(enable)))
+        conn.commit()
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Chat sessions {status_message}. <:yellow:1313941466862587997>")
+    else:
+        cursor.execute("UPDATE server_settings SET chat_enabled = ? WHERE guild_id = ?", (int(enable), guild_id))
+        conn.commit()
+        status_message = "enabled" if enable else "disabled"
+        await interaction.response.send_message(f"Chat sessions {status_message}. <:yellow:1313941466862587997>")
+
+    cursor.execute("SELECT * FROM server_settings WHERE guild_id = ?", (guild_id,))
+    result = cursor.fetchone()
+    logger.info(f"Chat sessions settings modified for guild {guild_id}. Current status: {result[7]}")
+
+    conn.close()
+
+
+
 ##################### BOT ADMINISTRATIVE COMMANDS #####################
 
 @tree.command(name="add_trigger", description="Add a trigger to the database")
@@ -797,14 +909,41 @@ async def cleanup_followed_users():
     conn = sqlite3.connect('../databases/bot.db')
     cursor = conn.cursor()
 
-    cursor.execute("SELECT followed_user_id, server_id FROM followed_users WHERE start_time <= DATETIME('now', '-1 day')")
+    cursor.execute("SELECT followed_user_id, server_id, channel_id FROM followed_users WHERE start_time <= DATETIME('now', '-1 day')")
     expired_users = cursor.fetchall()
-
     conn.close()
 
-    for user_id, server_id in expired_users:
-        await stop_following(user_id, server_id, "auto")
+    for user_id, server_id, channel_id in expired_users:
+        await stop_following(user_id, server_id, channel_id, "auto")
 
+
+
+@tasks.loop(minutes=1)
+async def cleanup_expired_chat_sessions():
+    """
+    Vérifie toutes les minutes les sessions de chat en cours et supprime celles qui ont dépassé 5 minutes.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    conn = sqlite3.connect('../databases/bot.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT server_id, channel_id FROM chat_sessions WHERE start_time <= ?",
+                   (now - datetime.timedelta(seconds=300),))
+    expired_sessions = cursor.fetchall()
+
+    cursor.execute("DELETE FROM chat_sessions WHERE start_time <= ?",
+                   (now - datetime.timedelta(seconds=300),))
+    conn.commit()
+    conn.close()
+
+    for server_id, channel_id in expired_sessions:
+        guild = bot.get_guild(server_id)
+        if guild:
+            channel = guild.get_channel(channel_id)
+            if channel:
+                await channel.send(
+                    "chat session ended. use `/chat start` again in 4 hours to start a new one <:yellow:1313941466862587997>")
 
 
 ##################### DISCORD BOT FUNCTIONS #####################
@@ -816,7 +955,7 @@ async def update_activity_status():
 
 
 
-async def stop_following(user_id, server_id, reason, interaction=None):
+async def stop_following(user_id, server_id, channel_id, reason, interaction=None):
     """
     Stops tracking a followed user on a specific server and sends a summary message.
     If called manually via `/follow`, interaction is required.
@@ -841,8 +980,10 @@ async def stop_following(user_id, server_id, reason, interaction=None):
     conn.commit()
     conn.close()
 
+    logger.info(f"Stopped following {user_id} in server {server_id}.")
+
     message = (
-        f"> # i've followed <@{user_id}>\n"
+        f"> ## i've followed <@{user_id}>\n"
         f"> - **{emoji_count}** paid smileys sent <:redAngry:1313876421227057193>\n"
         f"> - **{smiley_count}** free smileys received <a:angel:1313891911219679283>"
     )
@@ -851,11 +992,15 @@ async def stop_following(user_id, server_id, reason, interaction=None):
     if reason == "manual":
         await interaction.response.send_message(message, ephemeral=False)
     elif reason == "auto":
-        guild = interaction.client.get_guild(server_id)
+        guild = bot.get_guild(server_id)
         if guild:
             channel = guild.get_channel(channel_id)
             if channel:
                 await channel.send(message)
+            else:
+                logger.error(f"Channel {channel_id} not found in guild {server_id}.")
+        else:
+            logger.error(f"Guild {server_id} not found.")
 
 
 
@@ -868,13 +1013,13 @@ async def stop_following(user_id, server_id, reason, interaction=None):
 async def on_app_command_error(interaction, error: app_commands.AppCommandError):
     """Global error handler for app commands"""
     if isinstance(error, app_commands.errors.CommandOnCooldown):
-        retry_after = round(error.retry_after, 2)
+        retry_after = round(error.retry_after) // 60
         await interaction.response.send_message(
-            f"This command is on cooldown! Try again in **{retry_after}** seconds <:yawning_face:1313941450144223242>",
+            f"chill bro this command is on cooldown! try again in **{max(0, retry_after)}** minutes <:yawning_face:1313941450144223242>",
             ephemeral=True
         )
     else:
-        await interaction.response.send_message("An error occurred while executing the command. <:redAngry:1313876421227057193>", ephemeral=True)
+        await interaction.response.send_message("bruh an error occurred while executing the command. <:redAngry:1313876421227057193>", ephemeral=True)
         logger.error(f"Unhandled command error: {error}")
 
 
@@ -888,7 +1033,7 @@ async def on_ready():
 
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='server_settings';")
     if not cursor.fetchone():
-        logger.warning("The server_settings table does not exist in the database.")
+        logger.critical("The server_settings table does not exist in the database.")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS server_settings (
@@ -939,6 +1084,7 @@ async def on_ready():
         logger.critical(f"Error syncing command tree for the community server : {e}")
 
     cleanup_followed_users.start()
+    cleanup_expired_chat_sessions.start()
 
 
 
@@ -1004,8 +1150,17 @@ async def on_message(message):
 
     if friday_messages_enabled:
         if is_friday_ask_message(message.content):
-            await message.channel.send(process_friday_ask_message(timezone))
+            await message.reply(process_friday_ask_message(timezone))
             return
+
+    if is_in_chat_session(message.guild.id, message.channel.id):
+        gemini_message = await process_gemini_message(message)
+        if gemini_message:
+            await message.reply(gemini_message)
+            return
+        else:
+            return
+
 
     smileys = await process_message_for_smiley(message)
     if smileys:
@@ -1022,7 +1177,7 @@ async def on_message(message):
                     emoji_object = discord.PartialEmoji(name=smiley.split(":")[1], id=int(emoji_id))
                     await message.add_reaction(emoji_object)
                 except Exception:
-                    logger.error(f"Failed to add reaction {smiley} to message -> might be because it's a special trigger. if it is, all good.")
+                    logger.warning(f"Failed to add reaction {smiley} to message -> might be because it's a special trigger, or an animated smiley. if it is, all good.")
         add_experience(smileys, message.author.id, message.created_at)
 
 
