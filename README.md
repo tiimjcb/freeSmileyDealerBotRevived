@@ -50,6 +50,15 @@ Moreover, there's a leaderboard on each server with the `/leaderboard` command.
 
 For each emoji detected, you get 1 experience point, with a limit of 5 per message.
 
+### Chat with Smiley
+Have you ever wondered to chat with Free Smiley Dealer? Well, now you can!
+
+You can start a chat session with the `/chat_start` command. The bot will respond to every message sent in the channel you started the chat in !
+
+Each chat session is limited to *50 messages*, and can be maximum *5 minutes* long. You can start a chat session every *4 hours* per server. This is due to limitations with the Free Gemini API.
+
+*Messages sent are not stored, but are used to enhance Gemini's AI. No personal data is linked to the messages. You can still opt-out and have your messages not sent to the API by using the `/ignore_me` command*
+
 ### Server Settings
 
 You can customize the bot’s behavior per server:
@@ -57,6 +66,7 @@ You can customize the bot’s behavior per server:
 - Toggle on/off **message** responses and **reactions** responses for triggers:
   - `/set_smiley_messages`
   - `/set_smiley_reactions`
+- Enable or disable the **chat sessions** feature (`/set_chat`).
 - **Blacklist specific channels** from triggering the bot (`/blacklist_channel`).
 - **Blacklist specific triggers** from being used in the server (`/blacklist_trigger`).
 - **Set the timezone** of the server - used for the Friday ask feature (`/set_timezone`).
