@@ -930,7 +930,7 @@ async def cleanup_expired_chat_sessions():
     cursor = conn.cursor()
 
     cursor.execute("SELECT server_id, channel_id FROM chat_sessions WHERE start_time <= ?",
-                   (now - datetime.timedelta(seconds=300),))
+                   (now - datetime.timedelta(seconds=600),))
     expired_sessions = cursor.fetchall()
 
     cursor.execute("DELETE FROM chat_sessions WHERE start_time <= ?",
