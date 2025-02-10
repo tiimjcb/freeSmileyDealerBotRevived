@@ -67,7 +67,7 @@ async def help_command(interaction):
         "\n"
         "# Commands <:yellow:1313941466862587997>\n"
         "> - `/ignore_me [true/false]` : add or remove yourself from the bot's blacklist -- the bot will ignore you\n"
-        "> - `/chat_start` - `/chat_end` : start or end a chat session with the bot -- the bot will reply to every message for ten minutes (there are rate limits).\n"
+        "> - `/chat_start` - `/chat_end` : start or end a chat session with the bot -- the bot will reply to every message for 15 minutes (there are rate limits).\n"
         "> - `/help` : this help message \n"
         "> - `/random` : get a random smiley \n"
         "> - `/show_triggers` : show all of the different triggers \n"
@@ -346,7 +346,7 @@ async def chat_start(interaction):
     conn.close()
 
     await interaction.response.send_message(
-        f"yo the chat session is active -- i'll respond to every message here for **10 minutes**. <:yellow:1313941466862587997>\n"
+        f"yo the chat session is active -- i'll respond to every message here for **15 minutes**. <:yellow:1313941466862587997>\n"
         f"-# there's a 50 message limit, and 4h cooldown. sorry, it needs to stay free lol - `/chat_end` to stop"
     )
 
@@ -930,11 +930,11 @@ async def cleanup_expired_chat_sessions():
     cursor = conn.cursor()
 
     cursor.execute("SELECT server_id, channel_id FROM chat_sessions WHERE start_time <= ?",
-                   (now - datetime.timedelta(seconds=600),))
+                   (now - datetime.timedelta(seconds=900),))
     expired_sessions = cursor.fetchall()
 
     cursor.execute("DELETE FROM chat_sessions WHERE start_time <= ?",
-                   (now - datetime.timedelta(seconds=600),))
+                   (now - datetime.timedelta(seconds=900),))
     conn.commit()
     conn.close()
 
@@ -943,7 +943,7 @@ async def cleanup_expired_chat_sessions():
         if guild:
             channel = guild.get_channel(channel_id)
             if channel:
-                response = ("its been 10 minutes, i had to end the session. <:yellow:1313941466862587997>\n"
+                response = ("its been 15 minutes, i had to end the session. <:yellow:1313941466862587997>\n"
                             "-# use `/chat_start` again in 4 hours to start a new one")
                 await channel.send(response)
 
