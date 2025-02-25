@@ -73,6 +73,7 @@ async def help_command(interaction):
         "> - `/show_triggers` : show all of the different triggers \n"
         "> - `/experience` : see your experience points or someone else's \n"
         "> - `/leaderboard` : see the experience leaderboard for your server \n"
+
     )
 
     if is_admin:
@@ -383,6 +384,10 @@ async def chat_end(interaction):
         "-# you can start again in 4 hours"
     )
 
+
+@tree.command(name="dice", description="Roll a 6-faces dice")
+async def dice(interaction):
+    await interaction.response.send_message(f"you rolled a **4** <:yellow:1313941466862587997>")
 
 ##################### GUILD ADMINISTRATIVE COMMANDS #####################
 
