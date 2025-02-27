@@ -1,3 +1,5 @@
+import random
+
 from discord import app_commands
 from utils import *
 from discord.ext import tasks
@@ -387,7 +389,13 @@ async def chat_end(interaction):
 
 @tree.command(name="dice", description="Roll a 6-faces dice")
 async def dice(interaction):
-    await interaction.response.send_message(f"you rolled a **4** <:yellow:1313941466862587997>")
+    number = random.randint(0,1000)
+    if number == 54:
+        await interaction.response.send_message(f"wow holy shit you had one chance out of 1000 to roll this. but congrats, you rolled a **4** <a:vampire:1314355368117141547>")
+    elif number == 837:
+        await interaction.response.send_message(f"you rolled **absins** <:joker:1314328054713155624>")
+    else:
+        await interaction.response.send_message(f"you rolled a **4** <:yellow:1313941466862587997>")
 
 ##################### GUILD ADMINISTRATIVE COMMANDS #####################
 
